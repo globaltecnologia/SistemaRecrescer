@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { apiCreate, deleteFilteredRecord, editFilteredRecord, filterRecord, loginUi, openMenu, unique } from "./helpers";
 
 async function choose(page: Page, label: string, option: string) {
-  await page.getByLabel(label).click();
+  await page.getByLabel(label, { exact: true }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
@@ -14,8 +14,8 @@ test("Turmas: CRUD, pesquisa e validação", async ({ page, request }) => {
   await page.getByRole("button", { name: "Novo registro" }).click();
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Nome da turma é obrigatório.")).toBeVisible();
-  await page.getByLabel("Nome da turma").fill(original);
-  await page.getByLabel("Ano letivo").fill("2026");
+  await page.getByLabel("Nome da turma", { exact: true }).fill(original);
+  await page.getByLabel("Ano letivo", { exact: true }).fill("2026");
   await choose(page, "Turno", shiftName);
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Registro cadastrado com sucesso.")).toBeVisible();
@@ -37,8 +37,8 @@ test("Alunos: CRUD completo com relacionamentos e obrigatórios", async ({ page,
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Matrícula é obrigatório.")).toBeVisible();
   await expect(page.getByText("Nome é obrigatório.")).toBeVisible();
-  await page.getByLabel("Matrícula").fill(registration);
-  await page.getByLabel("Nome").fill(original);
+  await page.getByLabel("Matrícula", { exact: true }).fill(registration);
+  await page.getByLabel("Nome", { exact: true }).fill(original);
   await choose(page, "Turma", className); await choose(page, "Turno", shiftName);
   await choose(page, "Pai", fatherName); await choose(page, "Mãe", motherName);
   await page.getByRole("button", { name: "Cadastrar" }).click();
@@ -58,7 +58,7 @@ test("Ficha de Matrícula: CRUD, pesquisa e obrigatórios", async ({ page, reque
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Ano é obrigatório.")).toBeVisible();
   await expect(page.getByText("Nome do aluno é obrigatório.")).toBeVisible();
-  await page.getByLabel("Ano").fill("2026"); await page.getByLabel("Nome do aluno").fill(original);
+  await page.getByLabel("Ano", { exact: true }).fill("2026"); await page.getByLabel("Nome do aluno", { exact: true }).fill(original);
   await choose(page, "Turma requerida", className); await choose(page, "Turno requerido", shiftName);
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Registro cadastrado com sucesso.")).toBeVisible();
@@ -76,7 +76,7 @@ test("Ficha Médica: CRUD, pesquisa e aluno obrigatório", async ({ page, reques
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Aluno é obrigatório.")).toBeVisible();
   await choose(page, "Aluno", studentName);
-  await page.getByLabel("Contato de emergência").fill(original);
+  await page.getByLabel("Contato de emergência", { exact: true }).fill(original);
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Registro cadastrado com sucesso.")).toBeVisible();
   await filterRecord(page, original);
