@@ -4,8 +4,8 @@ import { admin, loginUi } from "./helpers";
 test.describe("Autenticação", () => {
   test("rejeita credenciais inválidas", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Login", { exact: true }).fill(admin.login);
-    await page.getByLabel("Senha", { exact: true }).fill("senha-incorreta");
+    await page.getByRole("textbox", { name: "Login", exact: true }).fill(admin.login);
+    await page.getByRole("textbox", { name: "Senha", exact: true }).fill("senha-incorreta");
     await page.getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page.getByRole("alert")).toContainText("Login ou senha inválidos.");
   });

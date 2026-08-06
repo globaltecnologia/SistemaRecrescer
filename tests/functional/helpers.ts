@@ -8,8 +8,8 @@ export function unique(prefix: string) {
 
 export async function loginUi(page: Page) {
   await page.goto("/");
-  await page.getByLabel("Login", { exact: true }).fill(admin.login);
-  await page.getByLabel("Senha", { exact: true }).fill(admin.password);
+  await page.getByRole("textbox", { name: "Login", exact: true }).fill(admin.login);
+  await page.getByRole("textbox", { name: "Senha", exact: true }).fill(admin.password);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page.getByText("Administrador · admin")).toBeVisible();
 }
