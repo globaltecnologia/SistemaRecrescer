@@ -31,6 +31,13 @@ services:
       dockerfile: Dockerfile.test
     command: npm run test:functional
     volumes:
+      - ./src:/app/src:ro
+      - ./server:/app/server:ro
+      - ./tests:/app/tests:ro
+      - ./public:/app/public:ro
+      - ./index.html:/app/index.html:ro
+      - ./playwright.config.ts:/app/playwright.config.ts:ro
+      - ./vite.config.ts:/app/vite.config.ts:ro
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report
 

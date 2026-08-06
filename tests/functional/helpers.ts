@@ -38,7 +38,9 @@ export async function openMenu(page: Page, name: string, section?: string) {
 
 export async function createRecord(page: Page, values: Record<string, string | number>) {
   await page.getByRole("button", { name: "Novo registro" }).click();
-  for (const [label, value] of Object.entries(values)) await page.getByLabel(label, { exact: true }).fill(String(value));
+  for (const [label, value] of Object.entries(values)) {
+    await page.getByRole("textbox", { name: label, exact: true }).fill(String(value));
+  }
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Registro cadastrado com sucesso.")).toBeVisible();
 }
@@ -52,8 +54,9 @@ export async function editFilteredRecord(page: Page, fieldLabel: string, oldValu
   const row = page.getByRole("row").filter({ hasText: oldValue });
   await row.getByRole("button", { name: "Editar" }).click();
   await expect(page.getByRole("heading", { name: "Editar registro" })).toBeVisible();
-  await expect(page.getByLabel(fieldLabel, { exact: true })).toHaveValue(oldValue);
-  await page.getByLabel(fieldLabel, { exact: true }).fill(newValue);
+  const field = page.getByRole("textbox", { name: fieldLabel, exact: true });
+  await expect(field).toHaveValue(oldValue);
+  await field.fill(newValue);
   await page.getByRole("button", { name: "Salvar alterações" }).click();
   await expect(page.getByText("Registro atualizado com sucesso.")).toBeVisible();
   await page.getByPlaceholder("Filtrar registros...").fill(newValue);
@@ -75,6 +78,6 @@ export async function expectRequired(page: Page, fieldLabel: string, errorText: 
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Revise os campos destacados antes de continuar.")).toBeVisible();
   await expect(page.getByText(errorText)).toBeVisible();
-  await expect(page.getByLabel(fieldLabel, { exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: fieldLabel, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cancelar" }).click();
 }
