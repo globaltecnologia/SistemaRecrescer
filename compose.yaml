@@ -1,0 +1,28 @@
+services:
+  api:
+    build: .
+    command: npm run api
+    environment:
+      PORT: "3001"
+      DATA_DIR: /app/data
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-recrescer}
+    volumes:
+      - recrescer_data:/app/data
+    ports:
+      - "3002:3001"
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_API_PROXY: http://api:3001
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
+volumes:
+  recrescer_data:

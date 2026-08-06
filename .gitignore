@@ -21,3 +21,7 @@ Thumbs.db
 *.pem
 *.key
 *.crt
+data/
+*.db
+*.db-shm
+*.db-wal
