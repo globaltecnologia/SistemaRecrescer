@@ -60,6 +60,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (user: SessionUser)
       onAuthenticated(result.user);
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Não foi possível entrar.");
+      throw loginError;
     }
   };
 
@@ -82,6 +83,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (user: SessionUser)
             loginButtonLabel: "Entrar",
           }}
           onLogin={handleLogin}
+          onError={(message) => setError(message)}
         />
       </div>
     </main>
@@ -254,7 +256,9 @@ function AuthenticatedApp({ user, onLogout }: { user: SessionUser; onLogout: () 
   );
 }
 
-export default function App() {
+interface AppProps {}
+
+export default function App({}: AppProps) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [checking, setChecking] = useState(hasStoredToken());
 
