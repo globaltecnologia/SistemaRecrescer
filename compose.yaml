@@ -24,5 +24,15 @@ services:
       - "5173:5173"
     restart: unless-stopped
 
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: npm run test:functional
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+
 volumes:
   recrescer_data:

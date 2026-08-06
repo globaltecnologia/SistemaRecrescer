@@ -1,0 +1,475 @@
+
+
+Running 11 tests using 1 worker
+
+[1/11] [chromium] › tests/functional/auth.spec.ts:5:3 › Autenticação › rejeita credenciais inválidas
+  1) [chromium] › tests/functional/auth.spec.ts:5:3 › Autenticação › rejeita credenciais inválidas ─
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       6 |     await page.goto("/");
+       7 |     await page.getByLabel("Login").fill(admin.login);
+    >  8 |     await page.getByLabel("Senha").fill("senha-incorreta");
+         |                                    ^
+       9 |     await page.getByRole("button", { name: "Entrar" }).click();
+      10 |     await expect(page.getByRole("alert")).toContainText("Login ou senha inválidos.");
+      11 |   });
+        at /app/tests/functional/auth.spec.ts:8:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-rejeita-credenciais-inválidas-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-rejeita-credenciais-inválidas-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Autenticação-rejeita-credenciais-inválidas-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-rejeita-credenciais-inválidas-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/auth-Autenticação-rejeita-credenciais-inválidas-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[2/11] [chromium] › tests/functional/auth.spec.ts:13:3 › Autenticação › entra, restaura a sessão e sai
+  2) [chromium] › tests/functional/auth.spec.ts:13:3 › Autenticação › entra, restaura a sessão e sai 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/auth.spec.ts:14:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-entra-restaura-a-sessão-e-sai-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-entra-restaura-a-sessão-e-sai-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Autenticação-entra-restaura-a-sessão-e-sai-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-Autenticação-entra-restaura-a-sessão-e-sai-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/auth-Autenticação-entra-restaura-a-sessão-e-sai-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[3/11] [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Turnos: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório
+  3) [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Turnos: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/basic-cruds.spec.ts:11:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/basic-cruds-Turnos-incluir-284ac-cluir-e-validar-obrigatório-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/basic-cruds-Turnos-incluir-284ac-cluir-e-validar-obrigatório-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/basic-cruds-Turnos-incluir-284ac-cluir-e-validar-obrigatório-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/basic-cruds-Turnos-incluir-284ac-cluir-e-validar-obrigatório-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/basic-cruds-Turnos-incluir-284ac-cluir-e-validar-obrigatório-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[4/11] [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Pais: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório
+  4) [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Pais: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/basic-cruds.spec.ts:11:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/basic-cruds-Pais-incluir-p-6e8cc-cluir-e-validar-obrigatório-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/basic-cruds-Pais-incluir-p-6e8cc-cluir-e-validar-obrigatório-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/basic-cruds-Pais-incluir-p-6e8cc-cluir-e-validar-obrigatório-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/basic-cruds-Pais-incluir-p-6e8cc-cluir-e-validar-obrigatório-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/basic-cruds-Pais-incluir-p-6e8cc-cluir-e-validar-obrigatório-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[5/11] [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Mães: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório
+  5) [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Mães: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/basic-cruds.spec.ts:11:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/basic-cruds-Mães-incluir-p-a3127-cluir-e-validar-obrigatório-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/basic-cruds-Mães-incluir-p-a3127-cluir-e-validar-obrigatório-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/basic-cruds-Mães-incluir-p-a3127-cluir-e-validar-obrigatório-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/basic-cruds-Mães-incluir-p-a3127-cluir-e-validar-obrigatório-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/basic-cruds-Mães-incluir-p-a3127-cluir-e-validar-obrigatório-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[6/11] [chromium] › tests/functional/relational-cruds.spec.ts:9:1 › Turmas: CRUD, pesquisa e validação
+  6) [chromium] › tests/functional/relational-cruds.spec.ts:9:1 › Turmas: CRUD, pesquisa e validação 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/relational-cruds.spec.ts:13:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/relational-cruds-Turmas-CRUD-pesquisa-e-validação-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/relational-cruds-Turmas-CRUD-pesquisa-e-validação-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/relational-cruds-Turmas-CRUD-pesquisa-e-validação-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/relational-cruds-Turmas-CRUD-pesquisa-e-validação-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/relational-cruds-Turmas-CRUD-pesquisa-e-validação-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[7/11] [chromium] › tests/functional/relational-cruds.spec.ts:27:1 › Alunos: CRUD completo com relacionamentos e obrigatórios
+  7) [chromium] › tests/functional/relational-cruds.spec.ts:27:1 › Alunos: CRUD completo com relacionamentos e obrigatórios 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/relational-cruds.spec.ts:35:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/relational-cruds-Alunos-CR-3ac5d-acionamentos-e-obrigatórios-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/relational-cruds-Alunos-CR-3ac5d-acionamentos-e-obrigatórios-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/relational-cruds-Alunos-CR-3ac5d-acionamentos-e-obrigatórios-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/relational-cruds-Alunos-CR-3ac5d-acionamentos-e-obrigatórios-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/relational-cruds-Alunos-CR-3ac5d-acionamentos-e-obrigatórios-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[8/11] [chromium] › tests/functional/relational-cruds.spec.ts:51:1 › Ficha de Matrícula: CRUD, pesquisa e obrigatórios
+  8) [chromium] › tests/functional/relational-cruds.spec.ts:51:1 › Ficha de Matrícula: CRUD, pesquisa e obrigatórios 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/relational-cruds.spec.ts:56:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-de--3e6a6-RUD-pesquisa-e-obrigatórios-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-de--3e6a6-RUD-pesquisa-e-obrigatórios-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/relational-cruds-Ficha-de--3e6a6-RUD-pesquisa-e-obrigatórios-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-de--3e6a6-RUD-pesquisa-e-obrigatórios-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/relational-cruds-Ficha-de--3e6a6-RUD-pesquisa-e-obrigatórios-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[9/11] [chromium] › tests/functional/relational-cruds.spec.ts:70:1 › Ficha Médica: CRUD, pesquisa e aluno obrigatório
+  9) [chromium] › tests/functional/relational-cruds.spec.ts:70:1 › Ficha Médica: CRUD, pesquisa e aluno obrigatório 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/relational-cruds.spec.ts:74:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-Méd-61db6-esquisa-e-aluno-obrigatório-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-Méd-61db6-esquisa-e-aluno-obrigatório-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/relational-cruds-Ficha-Méd-61db6-esquisa-e-aluno-obrigatório-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/relational-cruds-Ficha-Méd-61db6-esquisa-e-aluno-obrigatório-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/relational-cruds-Ficha-Méd-61db6-esquisa-e-aluno-obrigatório-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[10/11] [chromium] › tests/functional/users-and-reports.spec.ts:4:1 › Usuários: incluir, pesquisar, abrir, alterar, excluir e validar obrigatórios
+  10) [chromium] › tests/functional/users-and-reports.spec.ts:4:1 › Usuários: incluir, pesquisar, abrir, alterar, excluir e validar obrigatórios 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/users-and-reports.spec.ts:6:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/users-and-reports-Usuários-d41e4-luir-e-validar-obrigatórios-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/users-and-reports-Usuários-d41e4-luir-e-validar-obrigatórios-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/users-and-reports-Usuários-d41e4-luir-e-validar-obrigatórios-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/users-and-reports-Usuários-d41e4-luir-e-validar-obrigatórios-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/users-and-reports-Usuários-d41e4-luir-e-validar-obrigatórios-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[11/11] [chromium] › tests/functional/users-and-reports.spec.ts:22:1 › Relatórios: as quatro views carregam dados reais
+  11) [chromium] › tests/functional/users-and-reports.spec.ts:22:1 › Relatórios: as quatro views carregam dados reais 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Senha') resolved to 2 elements:
+        1) <input value="" id="_r_2_" required="" type="password" aria-invalid="false" autocomplete="current-password" class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input"/> aka getByRole('textbox', { name: 'Senha' })
+        2) <button tabindex="0" type="button" aria-label="Exibir ou ocultar senha" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-edgeEnd MuiIconButton-sizeMedium css-1ysp02-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Exibir ou ocultar senha' })
+
+    Call log:
+      - waiting for getByLabel('Senha')
+
+
+       at helpers.ts:12
+
+      10 |   await page.goto("/");
+      11 |   await page.getByLabel("Login").fill(admin.login);
+    > 12 |   await page.getByLabel("Senha").fill(admin.password);
+         |                                  ^
+      13 |   await page.getByRole("button", { name: "Entrar" }).click();
+      14 |   await expect(page.getByText("Administrador · admin")).toBeVisible();
+      15 | }
+        at loginUi (/app/tests/functional/helpers.ts:12:34)
+        at /app/tests/functional/users-and-reports.spec.ts:29:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/users-and-reports-Relatóri-bba8e--views-carregam-dados-reais-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/users-and-reports-Relatóri-bba8e--views-carregam-dados-reais-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/users-and-reports-Relatóri-bba8e--views-carregam-dados-reais-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/users-and-reports-Relatóri-bba8e--views-carregam-dados-reais-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/users-and-reports-Relatóri-bba8e--views-carregam-dados-reais-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  11 failed
+    [chromium] › tests/functional/auth.spec.ts:5:3 › Autenticação › rejeita credenciais inválidas ──
+    [chromium] › tests/functional/auth.spec.ts:13:3 › Autenticação › entra, restaura a sessão e sai 
+    [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Turnos: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+    [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Pais: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+    [chromium] › tests/functional/basic-cruds.spec.ts:9:3 › Mães: incluir, pesquisar, abrir, alterar, excluir e validar obrigatório 
+    [chromium] › tests/functional/relational-cruds.spec.ts:9:1 › Turmas: CRUD, pesquisa e validação 
+    [chromium] › tests/functional/relational-cruds.spec.ts:27:1 › Alunos: CRUD completo com relacionamentos e obrigatórios 
+    [chromium] › tests/functional/relational-cruds.spec.ts:51:1 › Ficha de Matrícula: CRUD, pesquisa e obrigatórios 
+    [chromium] › tests/functional/relational-cruds.spec.ts:70:1 › Ficha Médica: CRUD, pesquisa e aluno obrigatório 
+    [chromium] › tests/functional/users-and-reports.spec.ts:4:1 › Usuários: incluir, pesquisar, abrir, alterar, excluir e validar obrigatórios 
+    [chromium] › tests/functional/users-and-reports.spec.ts:22:1 › Relatórios: as quatro views carregam dados reais 

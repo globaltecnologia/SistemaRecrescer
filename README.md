@@ -40,3 +40,13 @@ No primeiro start a API cria o usuário definido em `ADMIN_LOGIN`/`ADMIN_PASSWOR
 - `vw_students_by_class`
 
 As operações de transporte ficam na aplicação (`src/api.ts`). A Biblioteca Global permanece desacoplada do backend e recebe operações por callbacks/data sources.
+
+## Testes funcionais
+
+A suíte Playwright cobre autenticação, inclusão, pesquisa, abertura/edição, alteração, exclusão e validação dos campos obrigatórios dos cadastros, além das quatro views de relatórios.
+
+```bash
+docker compose --profile test run --rm tests
+```
+
+O container de testes usa a imagem oficial do Playwright com Chromium. Durante a suíte, API e Vite são iniciados isoladamente em `3101` e `5175`; o SQLite fica em `test-results/data`.
