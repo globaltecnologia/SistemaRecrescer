@@ -212,47 +212,6 @@ function ReportPage({ page }: { page: PageKey }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Configurações específicas por entidade
-  let hiddenColumns = ["id", "created_at", "updated_at"];
-  let columnLabels: Record<string, string> = {};
-  if (page === "report-enrollment") {
-    // Ficha de Matrícula: apenas Ano, Nome do aluno e Turma (com nome da turma do backend)
-    hiddenColumns = [
-      "id", "created_at", "updated_at",
-      "student_id", "birth_date", "nationality", "birthplace", "previous_grade_course_shift",
-      "gender", "father_name", "father_phone", "father_cpf",
-      "mother_name", "mother_phone", "mother_cpf",
-      "lives_with", "student_address", "student_phone",
-      "guardian_name", "guardian_relationship",
-      "siblings_in_daycare", "siblings_details", "new_student", "origin_school",
-      "requested_class_id", "requested_shift_id", "contracted_hours", "requested_class", "requested_shift"
-    ];
-    columnLabels = {
-      year: "Ano do Requerimento",
-      student_name: "Nome do Aluno"
-    };
-  } else if (page === "report-medical") {
-    hiddenColumns = [
-      "id", "created_at", "updated_at",
-      "student_id",  // Escondido pois agora temos student_name
-      "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone",
-      "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone",
-      "health_plan", "emergency_hospital",
-      "measles", "chickenpox", "mumps", "rubella", "pertussis",
-      "other_common_diseases", "allergies", "fever_medication",
-      "tetanus_vaccine", "tetanus_vaccine_date",
-      "respiratory_disease", "neurological_disease",
-      "blood_type", "rh_factor", "notes", "birth_date",
-    ];
-    columnLabels = {
-      registration: "Matrícula",
-      student_name: "Nome do aluno",
-      class_name: "Turma",
-      shift_name: "Turno"
-    };
-  }
-
-
   useEffect(() => {
     if (!definition) return;
     let active = true;
@@ -272,7 +231,7 @@ function ReportPage({ page }: { page: PageKey }) {
         <button className="primary-button no-print" type="button" onClick={() => window.print()}>Imprimir</button>
       </div>
       <ErrorNotice message={error} />
-      <JsonGrid data={rows} loading={loading} searchable sortable pagination initialPageSize={25} hiddenColumns={hiddenColumns} columnLabels={columnLabels} />
+      <JsonGrid data={rows} loading={loading} searchable sortable pagination initialPageSize={25} />
     </section>
   );
 }

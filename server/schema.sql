@@ -207,8 +207,11 @@ SELECT e.id, e.year, e.student_name, e.birth_date, e.nationality, e.birthplace,
   LEFT JOIN classes c ON c.id = e.requested_class_id
   LEFT JOIN shifts s ON s.id = e.requested_shift_id;
 
+-- Remove a view se existir (importante para atualizações)
+DROP VIEW IF EXISTS vw_medical_forms;
+
 CREATE VIEW IF NOT EXISTS vw_medical_forms AS
-SELECT m.id, st.registration, st.name AS student_name, st.birth_date,
+SELECT m.id, st.registration, st.name AS student_name,
        m.emergency_contact_name, m.emergency_contact_relationship,
        m.emergency_contact_phone, m.secondary_contact_name,
        m.secondary_contact_relationship, m.secondary_contact_phone,
@@ -216,9 +219,13 @@ SELECT m.id, st.registration, st.name AS student_name, st.birth_date,
        m.mumps, m.rubella, m.pertussis, m.other_common_diseases,
        m.allergies, m.fever_medication, m.tetanus_vaccine,
        m.tetanus_vaccine_date, m.respiratory_disease,
-       m.neurological_disease, m.blood_type, m.rh_factor, m.notes
+       m.neurological_disease, m.blood_type, m.rh_factor, m.notes,
+       c.name AS class_name, s.name AS shift_name
+
   FROM medical_records m
-  JOIN students st ON st.id = m.student_id;
+  JOIN students st ON st.id = m.student_id
+  LEFT JOIN classes c ON c.id = st.class_id
+  LEFT JOIN shifts s ON s.id = COALESCE(st.shift_id, c.shift_id);
 
 CREATE VIEW IF NOT EXISTS vw_attendance_list AS
 SELECT c.school_year, c.id AS class_id, c.name AS class_name,
