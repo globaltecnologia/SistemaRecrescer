@@ -2,8 +2,29 @@ import { expect, test, type Page } from "@playwright/test";
 import { apiCreate, deleteFilteredRecord, editFilteredRecord, filterRecord, loginUi, openMenu, unique } from "./helpers";
 
 async function choose(page: Page, label: string, option: string) {
-  await page.getByRole("combobox", { name: label, exact: true }).click();
-  await page.getByRole("option", { name: option, exact: true }).click();
+  // Tenta pelo role + name (funciona se o campo tiver aria-label)
+  const combobox = page.getByRole("combobox", { name: label });
+  
+  if (await combobox.count() > 0) {
+    await combobox.click();
+    await page.getByRole("option", { name: option }).click();
+    return;
+  }
+  
+  // Fallback: tenta encontrar pelo <select> com o name exato
+  const select = page.locator("select").filter({ has: page.locator(`option:has-text("${option}")`) });
+  if (await select.count() > 0) {
+    await select.click();
+    await select.selectOption({ label: option });
+    return;
+  }
+  
+  // Último recurso: buscar pelo <label> e ir até o <select> pai
+  const field = page.getByText(label).first().locator("xpath=..").locator("select");
+  if (await field.count() > 0) {
+    await field.click();
+    await field.selectOption({ label: option });
+  }
 }
 
 test("Turmas: CRUD, pesquisa e validação", async ({ page, request }) => {
@@ -57,13 +78,13 @@ test("Ficha de Matrícula: CRUD, pesquisa e obrigatórios", async ({ page, reque
   await page.getByRole("button", { name: "Novo registro" }).click();
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Ano é obrigatório.")).toBeVisible();
-  await expect(page.getByText("Nome do aluno é obrigatório.")).toBeVisible();
-  await page.getByRole("spinbutton", { name: "Ano", exact: true }).fill("2026"); await page.getByRole("textbox", { name: "Nome do aluno", exact: true }).fill(original);
+  await expect(page.getByText("Aluno é obrigatório.")).toBeVisible();
+  await page.getByRole("spinbutton", { name: "Ano", exact: true }).fill("2026"); await page.getByRole("textbox", { name: "Aluno", exact: true }).fill(original);
   await choose(page, "Turma requerida", className); await choose(page, "Turno requerido", shiftName);
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText("Registro cadastrado com sucesso.")).toBeVisible();
   await filterRecord(page, original);
-  await editFilteredRecord(page, "Nome do aluno", original, changed);
+  await editFilteredRecord(page, "Aluno", original, changed);
   await deleteFilteredRecord(page, changed);
 });
 

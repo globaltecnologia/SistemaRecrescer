@@ -83,7 +83,6 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (user: SessionUser)
             loginButtonLabel: "Entrar",
           }}
           onLogin={handleLogin}
-          onError={(message) => setError(message)}
         />
       </div>
     </main>
@@ -95,6 +94,47 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
   const resource = definition?.resource ?? "";
   const dataSource = useMemo(() => createDataSource(resource), [resource]);
   if (!definition) return null;
+  
+  // Configurações específicas por entidade
+  let hiddenColumns = ["id", "created_at", "updated_at"];
+  let columnLabels: Record<string, string> = {};
+
+  if (page === "students") {
+    // Grid de Alunos: apenas Matrícula, Série e Nome do Aluno
+    hiddenColumns = [
+      "id", "created_at", "updated_at",
+      "birth_date", "gender", "nationality", "birthplace",
+      "education_level", "class_id", "shift_id",
+      "health_plan", "blood_type", "rh_factor", "address", "phone",
+      "fp", "ff", "scholarship", "first_installment", "pm", "siblings_at_school",
+      "father_id", "mother_id", "notes", "active"
+    ];
+    columnLabels = {
+      registration: "Matrícula",
+      grade: "Série",
+      name: "Nome do Aluno"
+    };
+  }
+
+  if (page === "enrollments") {
+    // Ficha de Matrícula: apenas Ano, Nome do aluno e Turma (com nome da turma do backend)
+    hiddenColumns = [
+      "id", "created_at", "updated_at",
+      "student_id", "birth_date", "nationality", "birthplace", "previous_grade_course_shift",
+      "gender", "father_name", "father_phone", "father_cpf",
+      "mother_name", "mother_phone", "mother_cpf",
+      "lives_with", "student_address", "student_phone",
+      "guardian_name", "guardian_relationship",
+      "siblings_in_daycare", "siblings_details", "new_student", "origin_school",
+      "requested_class_id", "requested_shift_id", "contracted_hours"
+    ];
+    columnLabels = {
+      year: "Ano",
+      student_name: "Aluno",
+      class_name: "Turma"
+    };
+  }
+  
   return (
     <Cadastro
       title={definition.title}
@@ -102,7 +142,8 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
       fields={definition.fields(references)}
       dataSource={dataSource}
       columns={2}
-      hiddenColumns={["id", "created_at", "updated_at"]}
+      hiddenColumns={hiddenColumns}
+      columnLabels={columnLabels}
       newLabel="Novo registro"
     />
   );

@@ -6,7 +6,7 @@ services:
       PORT: "3001"
       DATA_DIR: /app/data
       ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-recrescer}
+      ADMIN_PASSWORD: "1234"
     volumes:
       - recrescer_data:/app/data
     ports:

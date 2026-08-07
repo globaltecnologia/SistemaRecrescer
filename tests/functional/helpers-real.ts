@@ -7,7 +7,7 @@ export function unique(prefix: string) {
 }
 
 export async function loginUi(page: Page) {
-  await page.goto("/");
+  await page.goto("http://sistemarecrescerglobal-web-1:5173/");
   await page.getByRole("textbox", { name: "Login", exact: true }).fill(admin.login);
   await page.getByRole("textbox", { name: "Senha", exact: true }).fill(admin.password);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
@@ -15,14 +15,14 @@ export async function loginUi(page: Page) {
 }
 
 export async function apiLogin(request: APIRequestContext) {
-  const response = await request.post("http://127.0.0.1:3101/api/auth/login", { data: admin });
+  const response = await request.post("http://localhost:3002/api/auth/login", { data: admin });
   expect(response.ok()).toBeTruthy();
   return (await response.json()).token as string;
 }
 
 export async function apiCreate(request: APIRequestContext, resource: string, data: Record<string, unknown>) {
   const token = await apiLogin(request);
-  const response = await request.post(`http://127.0.0.1:3101/api/${resource}`, {
+  const response = await request.post(`http://localhost:3002/api/${resource}`, {
     headers: { Authorization: `Bearer ${token}` }, data,
   });
   expect(response.ok(), await response.text()).toBeTruthy();
