@@ -28,15 +28,15 @@ const menu = [
   {
     label: "Cadastros",
     items: [
-      ["enrollments", "Ficha de Matrícula"], ["students", "Alunos"], ["fathers", "Pais"],
-      ["mothers", "Mães"], ["medical_records", "Ficha Médica"],
+      ["enrollments", "Ficha de Matrícula"], /*["students", "Alunos"], ["fathers", "Pais"],
+      ["mothers", "Mães"], ["medical_records", "Ficha Médica"],*/
     ],
   },
   {
     label: "Relatórios",
     items: [
-      ["report-enrollment", "Ficha de Matrícula"], ["report-medical", "Ficha Médica"],
-      ["report-attendance", "Lista de Presença"], ["report-students-class", "Alunos por Turma"],
+      ["report-enrollment", "Ficha de Matrícula"], /*["report-medical", "Ficha Médica"],
+      ["report-attendance", "Lista de Presença"], ["report-students-class", "Alunos por Turma"],*/
     ],
   },
   {
