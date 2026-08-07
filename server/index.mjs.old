@@ -21,7 +21,7 @@ const entities = {
   mothers: ["name", "cpf", "residential_address", "residential_number", "residential_complement", "residential_district", "residential_city", "residential_state", "residential_zip", "residential_phone", "commercial_address", "commercial_number", "commercial_complement", "commercial_district", "commercial_city", "commercial_state", "commercial_zip", "commercial_phone"],
   students: ["registration", "name", "birth_date", "gender", "nationality", "birthplace", "grade", "education_level", "class_id", "shift_id", "health_plan", "blood_type", "rh_factor", "address", "phone", "fp", "ff", "scholarship", "first_installment", "pm", "siblings_at_school", "father_id", "mother_id", "notes", "active"],
   enrollments: ["year", "student_id", "student_name", "birth_date", "nationality", "birthplace", "previous_grade_course_shift", "gender", "father_name", "father_phone", "father_cpf", "mother_name", "mother_phone", "mother_cpf", "lives_with", "student_address", "student_phone", "guardian_name", "guardian_relationship", "siblings_in_daycare", "siblings_details", "new_student", "origin_school", "requested_class_id", "requested_shift_id", "contracted_hours"],
-  medical_records: ["name", "student_id", "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone", "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone", "health_plan", "emergency_hospital", "measles", "chickenpox", "mumps", "rubella", "pertussis", "other_common_diseases", "allergies", "fever_medication", "tetanus_vaccine", "tetanus_vaccine_date", "respiratory_disease", "neurological_disease", "blood_type", "rh_factor", "notes"],
+  medical_records: ["student_id", "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone", "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone", "health_plan", "emergency_hospital", "measles", "chickenpox", "mumps", "rubella", "pertussis", "other_common_diseases", "allergies", "fever_medication", "tetanus_vaccine", "tetanus_vaccine_date", "respiratory_disease", "neurological_disease", "blood_type", "rh_factor", "notes"],
 };
 
 const reports = {
@@ -226,17 +226,6 @@ const server = createServer(async (request, response) => {
       const allowed = entities[table];
       if (!allowed) return sendJson(response, 404, { error: "Recurso não encontrado." });
       const id = entityMatch[2] ? Number(entityMatch[2]) : null;
-
-      // Especificamente para medical_records, usar a view que inclui o nome do aluno
-      if (method === "GET" && id === null && table === "medical_records") {
-        return sendJson(response, 200, db.prepare(`
-          SELECT m.*, s.name AS student_name 
-          FROM medical_records m 
-          JOIN students s ON s.id = m.student_id 
-          ORDER BY m.id DESC
-        `).all());
-      }
-
       if (method === "GET" && id === null) {
         return sendJson(response, 200, db.prepare(`SELECT * FROM ${table} ORDER BY id DESC`).all());
       }
