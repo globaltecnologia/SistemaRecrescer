@@ -134,6 +134,25 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
       class_name: "Turma"
     };
   }
+
+  if (page === "fathers") {
+    // Grid de Pais: apenas Nome do Pai, Telefone Residencial e Telefone Comercial
+    hiddenColumns = [
+      "id", "created_at", "updated_at",
+      "cpf",
+      "residential_address", "residential_number", "residential_complement",
+      "residential_district", "residential_city", "residential_state",
+      "residential_zip",
+      "commercial_address", "commercial_number", "commercial_complement",
+      "commercial_district", "commercial_city", "commercial_state",
+      "commercial_zip"
+    ];
+    columnLabels = {
+      name: "Nome do Pai",
+      residential_phone: "Telefone Residencial",
+      commercial_phone: "Telefone Comercial"
+    };
+  }
   
   return (
     <Cadastro
