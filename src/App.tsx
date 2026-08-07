@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
 import {
   AuthPanel,
   Cadastro,
@@ -206,9 +206,107 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
   );
 }
 
+function reportValue(value: UiRecord[string]) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function reportGridValue(value: UiRecord[string]) {
+  if (value === null || value === undefined) return "Nulo";
+  return reportValue(value);
+}
+
+function reportDate(value: UiRecord[string]) {
+  const raw = reportValue(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : raw;
+}
+
+function reportGender(value: UiRecord[string]) {
+  const gender = reportValue(value).toUpperCase();
+  return ({ M: "Masculino", F: "Feminino", O: "Outro" } as Record<string, string>)[gender] ?? reportValue(value);
+}
+
+function reportYesNo(value: UiRecord[string]) {
+  return value === true || value === 1 || value === "1" ? "Sim" : "Não";
+}
+
+function EnrollmentPrintModal({ enrollment, onClose }: { enrollment: UiRecord; onClose: () => void }) {
+  useEffect(() => {
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  const year = reportValue(enrollment.year);
+  const className = reportValue(enrollment.requested_class);
+  const shift = reportValue(enrollment.requested_shift);
+  const guardian = reportValue(enrollment.guardian_name);
+
+  return (
+    <div className="dialog-backdrop enrollment-print-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <div className="enrollment-print-modal" role="dialog" aria-modal="true" aria-labelledby="enrollment-print-title">
+        <button className="enrollment-modal-close no-print" type="button" aria-label="Fechar ficha de matrícula" onClick={onClose}>×</button>
+        <article className="enrollment-print-sheet">
+          <header className="enrollment-print-header">
+            <h1>CRECHE ESCOLA RECRESCER</h1>
+            <p>Rua Gabriel Matta 99 - Recreio dos Bandeirantes</p>
+            <h2 id="enrollment-print-title">Ficha de Matrícula/{year}</h2>
+          </header>
+
+          <table className="enrollment-data-table">
+            <tbody>
+              <tr><th>Nome do Aluno:</th><td colSpan={3}>{reportValue(enrollment.student_name)}</td></tr>
+              <tr><th>Data de Nascimento:</th><td>{reportDate(enrollment.birth_date)}</td><th>Sexo:</th><td>{reportGender(enrollment.gender)}</td></tr>
+              <tr><th>Nacionalidade:</th><td>{reportValue(enrollment.nationality)}</td><th>Naturalidade:</th><td>{reportValue(enrollment.birthplace)}</td></tr>
+              <tr><th>Série/{year}:</th><td>{className}</td><th>Curso/Segmento:</th><td>{reportValue(enrollment.requested_education_level)}</td></tr>
+              <tr><th>Turno:</th><td colSpan={3}>{shift}</td></tr>
+              <tr className="enrollment-section-title"><th colSpan={4}>FILIAÇÃO:</th></tr>
+              <tr><th>Nome do Pai:</th><td>{reportValue(enrollment.father_name)}</td><th>Telefone:</th><td>{reportValue(enrollment.father_phone)}</td></tr>
+              <tr><th>CPF:</th><td colSpan={3}>{reportValue(enrollment.father_cpf)}</td></tr>
+              <tr><th>Nome da Mãe:</th><td>{reportValue(enrollment.mother_name)}</td><th>Telefone:</th><td>{reportValue(enrollment.mother_phone)}</td></tr>
+              <tr><th>CPF:</th><td colSpan={3}>{reportValue(enrollment.mother_cpf)}</td></tr>
+              <tr className="enrollment-section-title"><th colSpan={4}>RESIDÊNCIA:</th></tr>
+              <tr><th>Reside com:</th><td colSpan={3}>{reportValue(enrollment.lives_with)}</td></tr>
+              <tr><th>Endereço do Aluno:</th><td colSpan={3}>{reportValue(enrollment.student_address)}</td></tr>
+              <tr><th>Telefone residencial:</th><td colSpan={3}>{reportValue(enrollment.student_phone)}</td></tr>
+              <tr><th>Observações:</th><td colSpan={3}>{reportValue(enrollment.observations)}</td></tr>
+              <tr className="enrollment-section-title"><th colSpan={4}>OUTROS DADOS:</th></tr>
+              <tr><th>Possui irmãos no Colégio?</th><td colSpan={3}>{reportYesNo(enrollment.siblings_in_daycare)}</td></tr>
+              <tr><th>Aluno novo?</th><td colSpan={3}>{reportYesNo(enrollment.new_student)}</td></tr>
+              <tr><th>Escola de Origem:</th><td colSpan={3}>{reportValue(enrollment.origin_school)}</td></tr>
+            </tbody>
+          </table>
+
+          <div className="enrollment-declaration">
+            <p>Sr. Diretor da Creche Escola Recrescer, Eu, <span className="fill-line">{guardian}</span>,<br />
+              responsável pelo aluno(a) {reportValue(enrollment.student_name)} venho, através do presente, requerer a matrícula do citado no(a):<br />
+              Turma: {className}<br />
+              Turno Escolhido: {shift}<br />
+              Horas Contratadas: {reportValue(enrollment.contracted_hours)}</p>
+            <p className="enrollment-rule-agreement">Acatarei integralmente o Regimento Interno do Colégio.</p>
+            <p className="enrollment-date-line">Rio de Janeiro, _____ de ____________________ de _______.</p>
+            <div className="enrollment-signature"><span />Assinatura do Pai, Mãe ou Responsável</div>
+          </div>
+
+          <div className="enrollment-print-actions no-print">
+            <button type="button" onClick={() => window.print()}>Imprimir</button>
+          </div>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 function ReportPage({ page }: { page: PageKey }) {
   const definition = reports[page as keyof typeof reports];
   const [rows, setRows] = useState<UiRecord[]>([]);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<UiRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -225,11 +323,13 @@ function ReportPage({ page }: { page: PageKey }) {
       "lives_with", "student_address", "student_phone",
       "guardian_name", "guardian_relationship",
       "siblings_in_daycare", "siblings_details", "new_student", "origin_school",
-      "requested_class_id", "requested_shift_id", "contracted_hours", "requested_class", "requested_shift"
+      "requested_class_id", "requested_shift_id", "contracted_hours", "requested_shift",
+      "requested_education_level", "observations"
     ];
     columnLabels = {
       year: "Ano do Requerimento",
-      student_name: "Nome do Aluno"
+      student_name: "Nome do Aluno",
+      requested_class: "Turma"
     };
   } else if (page === "report-medical") {
     hiddenColumns = [
@@ -256,6 +356,8 @@ function ReportPage({ page }: { page: PageKey }) {
   useEffect(() => {
     if (!definition) return;
     let active = true;
+    setSelectedEnrollment(null);
+    setError("");
     setLoading(true);
     listReport(definition.endpoint)
       .then((data) => { if (active) setRows(data); })
@@ -264,15 +366,32 @@ function ReportPage({ page }: { page: PageKey }) {
     return () => { active = false; };
   }, [definition]);
 
+  const openEnrollmentFromGrid = (event: MouseEvent<HTMLDivElement>) => {
+    if (page !== "report-enrollment") return;
+    const target = event.target as HTMLElement;
+    const tableRow = target.closest("tbody tr");
+    if (!tableRow || !event.currentTarget.contains(tableRow)) return;
+    const cells = Array.from(tableRow.querySelectorAll("td"), (cell) => cell.textContent?.trim() ?? "");
+    const enrollment = rows.find((row) =>
+      reportGridValue(row.year) === cells[0]
+      && reportGridValue(row.student_name) === cells[1]
+      && reportGridValue(row.requested_class) === cells[2]
+    );
+    if (enrollment) setSelectedEnrollment(enrollment);
+  };
+
   if (!definition) return null;
   return (
     <section className="report-page">
-      <div className="page-heading">
-        <div><h2>{definition.title}</h2><p>Dados obtidos diretamente da view de relatório.</p></div>
-        <button className="primary-button no-print" type="button" onClick={() => window.print()}>Imprimir</button>
+      <div className={`page-heading ${page === "report-enrollment" ? "no-print" : ""}`}>
+        <div><h2>{definition.title}</h2><p>{page === "report-enrollment" ? "Clique em uma matrícula para visualizar e imprimir a ficha." : "Dados obtidos diretamente da view de relatório."}</p></div>
+        {page !== "report-enrollment" && <button className="primary-button no-print" type="button" onClick={() => window.print()}>Imprimir</button>}
       </div>
       <ErrorNotice message={error} />
-      <JsonGrid data={rows} loading={loading} searchable sortable pagination initialPageSize={25} hiddenColumns={hiddenColumns} columnLabels={columnLabels} />
+      <div className={page === "report-enrollment" ? "clickable-report-grid no-print" : ""} onClick={openEnrollmentFromGrid}>
+        <JsonGrid data={rows} loading={loading} searchable sortable pagination initialPageSize={25} hiddenColumns={hiddenColumns} columnLabels={columnLabels} />
+      </div>
+      {selectedEnrollment && <EnrollmentPrintModal enrollment={selectedEnrollment} onClose={() => setSelectedEnrollment(null)} />}
     </section>
   );
 }

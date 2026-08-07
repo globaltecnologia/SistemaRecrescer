@@ -196,14 +196,31 @@ SELECT e.id, e.year, e.student_name, e.birth_date, e.nationality, e.birthplace,
   LEFT JOIN classes c ON c.id = e.requested_class_id
   LEFT JOIN shifts s ON s.id = e.requested_shift_id;
 
-CREATE VIEW IF NOT EXISTS vw_enrollment_forms AS
-SELECT e.id, e.year, e.student_name, e.birth_date, e.nationality, e.birthplace,
-       e.previous_grade_course_shift, e.gender, e.father_name, e.father_phone,
-       e.father_cpf, e.mother_name, e.mother_phone, e.mother_cpf, e.lives_with,
-       e.student_address, e.student_phone, e.guardian_name, e.guardian_relationship,
+DROP VIEW IF EXISTS vw_enrollment_forms;
+CREATE VIEW vw_enrollment_forms AS
+SELECT e.id, e.year, e.student_name,
+       COALESCE(e.birth_date, st.birth_date) AS birth_date,
+       COALESCE(e.nationality, st.nationality) AS nationality,
+       COALESCE(e.birthplace, st.birthplace) AS birthplace,
+       e.previous_grade_course_shift,
+       COALESCE(e.gender, st.gender) AS gender,
+       COALESCE(e.father_name, f.name) AS father_name,
+       COALESCE(e.father_phone, f.residential_phone, f.commercial_phone) AS father_phone,
+       COALESCE(e.father_cpf, f.cpf) AS father_cpf,
+       COALESCE(e.mother_name, m.name) AS mother_name,
+       COALESCE(e.mother_phone, m.residential_phone, m.commercial_phone) AS mother_phone,
+       COALESCE(e.mother_cpf, m.cpf) AS mother_cpf,
+       e.lives_with,
+       COALESCE(e.student_address, st.address) AS student_address,
+       COALESCE(e.student_phone, st.phone) AS student_phone,
+       e.guardian_name, e.guardian_relationship,
        e.siblings_in_daycare, e.siblings_details, e.new_student, e.origin_school,
-       c.name AS requested_class, s.name AS requested_shift, e.contracted_hours
+       c.name AS requested_class, c.education_level AS requested_education_level,
+       s.name AS requested_shift, e.contracted_hours, st.notes AS observations
   FROM enrollments e
+  LEFT JOIN students st ON st.id = e.student_id
+  LEFT JOIN fathers f ON f.id = st.father_id
+  LEFT JOIN mothers m ON m.id = st.mother_id
   LEFT JOIN classes c ON c.id = e.requested_class_id
   LEFT JOIN shifts s ON s.id = e.requested_shift_id;
 

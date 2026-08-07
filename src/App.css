@@ -32,6 +32,41 @@ button { cursor: pointer; }
 .user-dialog input:not([type="checkbox"]) { width: 100%; padding: 10px 11px; border: 1px solid #c8d4df; border-radius: 8px; outline: none; }
 .user-dialog input:focus { border-color: #167c68; box-shadow: 0 0 0 3px rgba(22, 124, 104, .12); }
 .check-field { display: flex; align-items: center; gap: 8px; }.dialog-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 5px; }
+.clickable-report-grid tbody tr { cursor: pointer; }
+.clickable-report-grid tbody tr:focus-within, .clickable-report-grid tbody tr:hover { background: #edf8f4; }
+.enrollment-print-backdrop { z-index: 50; align-items: start; overflow-y: auto; }
+.enrollment-print-modal { position: relative; width: min(100%, 900px); margin: auto; padding: 48px 24px 24px; background: #e9eef1; border-radius: 14px; box-shadow: 0 24px 80px rgba(0, 0, 0, .28); }
+.enrollment-modal-close { position: absolute; top: 10px; right: 16px; width: 34px; height: 34px; border: 0; border-radius: 50%; color: #334653; background: #fff; font-size: 25px; line-height: 1; }
+.enrollment-print-sheet { width: min(100%, 210mm); min-height: 280mm; margin: 0 auto; padding: 10mm 9mm; color: #111; background: #fff; border: 1px solid #888; box-shadow: 0 8px 28px rgba(0, 0, 0, .15); font-family: Arial, Helvetica, sans-serif; font-size: 13px; }
+.enrollment-print-header { margin-bottom: 24px; text-align: center; }
+.enrollment-print-header h1 { margin: 0; font-size: 21px; font-weight: 400; }
+.enrollment-print-header p { margin: 1px 0; font-size: 18px; }
+.enrollment-print-header h2 { margin: 1px 0 0; font-size: 18px; }
+.enrollment-data-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.enrollment-data-table th, .enrollment-data-table td { height: 23px; padding: 3px 5px; border: 1px solid #c4c4c4; text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+.enrollment-data-table th { width: 29%; font-weight: 400; }
+.enrollment-data-table td { width: 35%; }
+.enrollment-data-table th:nth-child(3) { width: 20%; }
+.enrollment-data-table td:nth-child(4) { width: 16%; }
+.enrollment-data-table .enrollment-section-title th { font-weight: 700; }
+.enrollment-declaration { margin-top: 45px; line-height: 1.18; }
+.enrollment-declaration p { margin: 0; }
+.enrollment-declaration .fill-line { display: inline-block; min-width: 250px; min-height: 15px; border-bottom: 1px solid #111; }
+.enrollment-rule-agreement { margin-top: 30px !important; text-align: center; }
+.enrollment-date-line { margin-top: 30px !important; text-align: right; }
+.enrollment-signature { width: 66%; margin: 52px 0 0 auto; text-align: center; }
+.enrollment-signature span { display: block; border-top: 1px solid #111; }
+.enrollment-print-actions { display: flex; justify-content: center; margin-top: 58px; }
+.enrollment-print-actions button { padding: 6px 13px; border: 1px solid #879098; border-radius: 4px; background: #f2f2f2; }
 @media (max-width: 980px) { .app-shell { grid-template-columns: 210px minmax(0, 1fr); } .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .page-content { padding: 20px; } }
-@media (max-width: 700px) { .app-shell { display: block; } .sidebar { position: relative; width: 100%; height: auto; } .topbar { padding: 0 16px; } .dashboard-grid { grid-template-columns: 1fr; } .page-heading { align-items: flex-start; flex-direction: column; } }
-@media print { body { background: #fff; } .no-print { display: none !important; } .app-shell { display: block; } .page-content { padding: 0; max-width: none; } }
+@media (max-width: 700px) { .app-shell { display: block; } .sidebar { position: relative; width: 100%; height: auto; } .topbar { padding: 0 16px; } .dashboard-grid { grid-template-columns: 1fr; } .page-heading { align-items: flex-start; flex-direction: column; } .enrollment-print-backdrop { padding: 0; } .enrollment-print-modal { padding: 46px 8px 8px; border-radius: 0; } .enrollment-print-sheet { padding: 7mm 4mm; } }
+@page { size: A4 portrait; margin: 8mm; }
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .app-shell { display: block; }
+  .page-content { padding: 0; max-width: none; }
+  .enrollment-print-backdrop { position: static; display: block; padding: 0; overflow: visible; background: #fff; }
+  .enrollment-print-modal { width: 100%; margin: 0; padding: 0; background: #fff; border-radius: 0; box-shadow: none; }
+  .enrollment-print-sheet { width: 100%; min-height: 0; margin: 0; padding: 0; border: 0; box-shadow: none; }
+}

@@ -22,15 +22,25 @@ test("Usuários: incluir, pesquisar, abrir, alterar, excluir e validar obrigató
 test("Relatórios: as quatro views carregam dados reais", async ({ page, request }) => {
   const shiftName = unique("Turno relatório"), className = unique("Turma relatório"), studentName = unique("Aluno relatório");
   const shift = await apiCreate(request, "shifts", { name: shiftName });
-  const cls = await apiCreate(request, "classes", { name: className, school_year: 2026, shift_id: shift.id, grade: "1º" });
+  const cls = await apiCreate(request, "classes", { name: className, school_year: 2026, shift_id: shift.id, grade: "1º", education_level: "Creche" });
   const student = await apiCreate(request, "students", { registration: unique("REL"), name: studentName, class_id: cls.id, shift_id: shift.id, active: true });
-  await apiCreate(request, "enrollments", { year: 2026, student_id: student.id, student_name: studentName, requested_class_id: cls.id, requested_shift_id: shift.id });
+  await apiCreate(request, "enrollments", { year: 2026, student_id: student.id, student_name: studentName, father_name: "Pai do relatório", requested_class_id: cls.id, requested_shift_id: shift.id, contracted_hours: "09:00h" });
   await apiCreate(request, "medical_records", { student_id: student.id, emergency_contact_name: "Contato relatório" });
   await loginUi(page);
   const reportNav = page.locator(".nav-section").filter({ hasText: "Relatórios" });
   for (const report of ["Ficha de Matrícula", "Ficha Médica", "Lista de Presença", "Alunos por Turma"]) {
     await reportNav.getByRole("button", { name: report, exact: true }).click();
     await expect(page.getByText(studentName).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Imprimir" })).toBeVisible();
+    if (report === "Ficha de Matrícula") {
+      await page.getByRole("row").filter({ hasText: studentName }).click();
+      const dialog = page.getByRole("dialog", { name: "Ficha de Matrícula/2026" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText("Pai do relatório")).toBeVisible();
+      await expect(dialog.getByText("Creche", { exact: true })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: "Imprimir" })).toBeVisible();
+      await dialog.getByRole("button", { name: "Fechar ficha de matrícula" }).click();
+    } else {
+      await expect(page.getByRole("button", { name: "Imprimir" })).toBeVisible();
+    }
   }
 });
