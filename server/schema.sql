@@ -1,43 +1,41 @@
-PRAGMA foreign_keys = ON;
-
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  login TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  login VARCHAR(255) NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-  token_hash TEXT PRIMARY KEY,
+  token_hash VARCHAR(64) PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS shifts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS classes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
   school_year INTEGER,
   grade TEXT,
   education_level TEXT,
   shift_id INTEGER REFERENCES shifts(id) ON DELETE SET NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(name, school_year)
 );
 
 CREATE TABLE IF NOT EXISTS fathers (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name TEXT NOT NULL,
   cpf TEXT,
   residential_address TEXT,
@@ -56,12 +54,12 @@ CREATE TABLE IF NOT EXISTS fathers (
   commercial_state TEXT,
   commercial_zip TEXT,
   commercial_phone TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS mothers (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name TEXT NOT NULL,
   cpf TEXT,
   residential_address TEXT,
@@ -80,13 +78,13 @@ CREATE TABLE IF NOT EXISTS mothers (
   commercial_state TEXT,
   commercial_zip TEXT,
   commercial_phone TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS students (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  registration TEXT NOT NULL UNIQUE,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  registration VARCHAR(255) NOT NULL UNIQUE,
   name TEXT NOT NULL,
   birth_date TEXT,
   gender TEXT,
@@ -111,12 +109,12 @@ CREATE TABLE IF NOT EXISTS students (
   mother_id INTEGER REFERENCES mothers(id) ON DELETE SET NULL,
   notes TEXT,
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS enrollments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   year INTEGER NOT NULL,
   student_id INTEGER REFERENCES students(id) ON DELETE SET NULL,
   student_name TEXT NOT NULL,
@@ -143,12 +141,12 @@ CREATE TABLE IF NOT EXISTS enrollments (
   requested_class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
   requested_shift_id INTEGER REFERENCES shifts(id) ON DELETE SET NULL,
   contracted_hours TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS medical_records (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   student_id INTEGER NOT NULL UNIQUE REFERENCES students(id) ON DELETE CASCADE,
   emergency_contact_name TEXT,
   emergency_contact_relationship TEXT,
@@ -173,14 +171,9 @@ CREATE TABLE IF NOT EXISTS medical_records (
   blood_type TEXT,
   rh_factor TEXT,
   notes TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX IF NOT EXISTS idx_students_class ON students(class_id);
-CREATE INDEX IF NOT EXISTS idx_students_shift ON students(shift_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_year ON enrollments(year);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
 -- View para listagem de matrículas com nomes legíveis
 DROP VIEW IF EXISTS vw_enrollments;
@@ -227,7 +220,7 @@ SELECT e.id, e.year, e.student_name,
 -- Remove a view se existir (importante para atualizações)
 DROP VIEW IF EXISTS vw_medical_forms;
 
-CREATE VIEW IF NOT EXISTS vw_medical_forms AS
+CREATE VIEW vw_medical_forms AS
 SELECT m.id, st.registration, st.name AS student_name,
        m.emergency_contact_name, m.emergency_contact_relationship,
        m.emergency_contact_phone, m.secondary_contact_name,
@@ -244,7 +237,8 @@ SELECT m.id, st.registration, st.name AS student_name,
   LEFT JOIN classes c ON c.id = st.class_id
   LEFT JOIN shifts s ON s.id = COALESCE(st.shift_id, c.shift_id);
 
-CREATE VIEW IF NOT EXISTS vw_attendance_list AS
+DROP VIEW IF EXISTS vw_attendance_list;
+CREATE VIEW vw_attendance_list AS
 SELECT c.school_year, c.id AS class_id, c.name AS class_name,
        s.name AS shift_name, st.registration, st.name AS student_name
   FROM students st
@@ -253,7 +247,8 @@ SELECT c.school_year, c.id AS class_id, c.name AS class_name,
  WHERE st.active = 1
  ORDER BY c.name, st.name;
 
-CREATE VIEW IF NOT EXISTS vw_students_by_class AS
+DROP VIEW IF EXISTS vw_students_by_class;
+CREATE VIEW vw_students_by_class AS
 SELECT c.school_year, c.id AS class_id, c.name AS class_name, c.grade,
        c.education_level, s.name AS shift_name,
        st.registration, st.name AS student_name, st.birth_date, st.gender

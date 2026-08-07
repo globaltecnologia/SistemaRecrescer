@@ -17,7 +17,7 @@ export default defineConfig({
     {
       command: "npm run api",
       url: "http://127.0.0.1:3101/api/health",
-      env: { ...process.env, PORT: "3101", DATA_DIR: "/tmp/recrescer-e2e", ADMIN_LOGIN: "admin", ADMIN_PASSWORD: "recrescer" },
+      env: { ...process.env, PORT: "3101", MYSQL_DATABASE: process.env.MYSQL_DATABASE ?? "recrescer_test", ADMIN_LOGIN: "admin", ADMIN_PASSWORD: "recrescer" },
       reuseExistingServer: false,
       timeout: 30_000,
     },

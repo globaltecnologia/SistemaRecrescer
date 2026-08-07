@@ -1,18 +1,35 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DatabaseSync } from "node:sqlite";
+import mysql from "mysql2/promise";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const dataDirectory = process.env.DATA_DIR ?? resolve(root, "data");
-const databaseFile = process.env.DATABASE_FILE ?? resolve(dataDirectory, "recrescer.db");
 const port = Number(process.env.PORT ?? 3001);
+const databaseConfig = {
+  host: process.env.MYSQL_HOST ?? "127.0.0.1",
+  port: Number(process.env.MYSQL_PORT ?? 3306),
+  user: process.env.MYSQL_USER ?? "recrescer",
+  password: process.env.MYSQL_PASSWORD ?? "recrescer",
+  database: process.env.MYSQL_DATABASE ?? "recrescer",
+  waitForConnections: true,
+  connectionLimit: 10,
+  multipleStatements: true,
+  charset: "utf8mb4",
+  timezone: "Z",
+};
+const db = mysql.createPool(databaseConfig);
 
-mkdirSync(dataDirectory, { recursive: true });
-const db = new DatabaseSync(databaseFile);
-db.exec(readFileSync(resolve(root, "server/schema.sql"), "utf8"));
+async function query(sql, parameters = []) {
+  const [rows] = await db.execute(sql, parameters);
+  return rows;
+}
+
+async function initializeDatabase() {
+  const schema = readFileSync(resolve(root, "server/schema.sql"), "utf8");
+  await db.query(schema);
+}
 
 const entities = {
   shifts: ["name"],
@@ -111,17 +128,18 @@ async function readBody(request) {
   }
 }
 
-function authenticatedUser(request) {
+async function authenticatedUser(request) {
   const authorization = request.headers.authorization ?? "";
   if (!authorization.startsWith("Bearer ")) return null;
-  return db.prepare(`
+  const rows = await query(`
     SELECT u.id, u.name, u.login
       FROM sessions s
       JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?
-       AND s.expires_at > datetime('now')
+       AND s.expires_at > CURRENT_TIMESTAMP
        AND u.active = 1
-  `).get(hashToken(authorization.slice(7))) ?? null;
+  `, [hashToken(authorization.slice(7))]);
+  return rows[0] ?? null;
 }
 
 function cleanValues(source, allowed) {
@@ -135,42 +153,43 @@ function cleanValues(source, allowed) {
   );
 }
 
-function createEntity(table, allowed, values) {
+async function createEntity(table, allowed, values) {
   const cleaned = cleanValues(values, allowed);
   const columns = Object.keys(cleaned);
   if (!columns.length) throw new Error("Nenhum campo informado.");
   const placeholders = columns.map(() => "?").join(", ");
-  const result = db.prepare(
+  const result = await query(
     `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders})`,
-  ).run(...columns.map((key) => cleaned[key]));
-  return db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(result.lastInsertRowid);
+    columns.map((key) => cleaned[key]),
+  );
+  const rows = await query(`SELECT * FROM ${table} WHERE id = ?`, [result.insertId]);
+  return rows[0];
 }
 
-function updateEntity(table, allowed, id, values) {
+async function updateEntity(table, allowed, id, values) {
   const cleaned = cleanValues(values, allowed);
   const columns = Object.keys(cleaned);
   if (!columns.length) throw new Error("Nenhum campo informado.");
-  db.prepare(
+  await query(
     `UPDATE ${table} SET ${columns.map((key) => `${key} = ?`).join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-  ).run(...columns.map((key) => cleaned[key]), id);
-  return db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id);
+    [...columns.map((key) => cleaned[key]), id],
+  );
+  const rows = await query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
+  return rows[0];
 }
 
-function ensureAdmin() {
-  const row = db.prepare("SELECT COUNT(*) AS total FROM users").get();
+async function ensureAdmin() {
+  const [row] = await query("SELECT COUNT(*) AS total FROM users");
   if (Number(row.total) > 0) return;
   const login = process.env.ADMIN_LOGIN ?? "admin";
   const password = process.env.ADMIN_PASSWORD ?? "recrescer";
-  db.prepare("INSERT INTO users (name, login, password_hash) VALUES (?, ?, ?)").run(
+  await query("INSERT INTO users (name, login, password_hash) VALUES (?, ?, ?)", [
     "Administrador",
     login,
     hashPassword(password),
-  );
+  ]);
   console.warn(`Usuário inicial criado: ${login}. Altere a senha após o primeiro acesso.`);
 }
-
-ensureAdmin();
-db.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
 
 const server = createServer(async (request, response) => {
   try {
@@ -185,23 +204,26 @@ const server = createServer(async (request, response) => {
     if (path === "/api/auth/login" && method === "POST") {
       const values = await readBody(request);
       const login = String(values.login ?? values.username ?? "");
-      const user = db.prepare(
-        "SELECT * FROM users WHERE login = ? COLLATE NOCASE AND active = 1",
-      ).get(login);
+      const users = await query(
+        "SELECT * FROM users WHERE LOWER(login) = LOWER(?) AND active = 1",
+        [login],
+      );
+      const user = users[0];
       if (!user || !passwordMatches(String(values.password ?? ""), user.password_hash)) {
         return sendJson(response, 401, { error: "Login ou senha inválidos." });
       }
       const token = randomBytes(32).toString("base64url");
-      db.prepare(
-        "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, datetime('now', '+12 hours'))",
-      ).run(hashToken(token), user.id);
+      await query(
+        "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 HOUR))",
+        [hashToken(token), user.id],
+      );
       return sendJson(response, 200, {
         token,
         user: { id: user.id, name: user.name, login: user.login },
       });
     }
 
-    const user = authenticatedUser(request);
+    const user = await authenticatedUser(request);
     if (!user) return sendJson(response, 401, { error: "Sessão ausente ou expirada." });
 
     if (path === "/api/auth/me" && method === "GET") {
@@ -209,55 +231,58 @@ const server = createServer(async (request, response) => {
     }
     if (path === "/api/auth/logout" && method === "POST") {
       const token = (request.headers.authorization ?? "").slice(7);
-      db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(hashToken(token));
+      await query("DELETE FROM sessions WHERE token_hash = ?", [hashToken(token)]);
       return sendJson(response, 204, null);
     }
 
     if (path === "/api/users" && method === "GET") {
-      return sendJson(response, 200, db.prepare(
+      return sendJson(response, 200, await query(
         "SELECT id, name, login, active, created_at, updated_at FROM users ORDER BY name",
-      ).all());
+      ));
     }
     if (path === "/api/users" && method === "POST") {
       const values = await readBody(request);
       if (!values.name || !values.login || !values.password) {
         return sendJson(response, 400, { error: "Nome, login e senha são obrigatórios." });
       }
-      const result = db.prepare(
+      const result = await query(
         "INSERT INTO users (name, login, password_hash, active) VALUES (?, ?, ?, ?)",
-      ).run(values.name, values.login, hashPassword(String(values.password)), values.active === false ? 0 : 1);
-      return sendJson(response, 201, db.prepare(
+        [values.name, values.login, hashPassword(String(values.password)), values.active === false ? 0 : 1]);
+      const created = await query(
         "SELECT id, name, login, active FROM users WHERE id = ?",
-      ).get(result.lastInsertRowid));
+        [result.insertId]);
+      return sendJson(response, 201, created[0]);
     }
 
     const userMatch = path.match(/^\/api\/users\/(\d+)$/);
     if (userMatch && method === "PUT") {
       const values = await readBody(request);
       const id = Number(userMatch[1]);
-      const current = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+      const currentRows = await query("SELECT * FROM users WHERE id = ?", [id]);
+      const current = currentRows[0];
       if (!current) return sendJson(response, 404, { error: "Usuário não encontrado." });
-      db.prepare(`
+      await query(`
         UPDATE users
            SET name = ?, login = ?, active = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?
-      `).run(
+      `, [
         values.name ?? current.name,
         values.login ?? current.login,
         values.active === undefined ? current.active : values.active ? 1 : 0,
         values.password ? hashPassword(String(values.password)) : current.password_hash,
         id,
-      );
-      return sendJson(response, 200, db.prepare(
+      ]);
+      const updated = await query(
         "SELECT id, name, login, active FROM users WHERE id = ?",
-      ).get(id));
+        [id]);
+      return sendJson(response, 200, updated[0]);
     }
     if (userMatch && method === "DELETE") {
       const id = Number(userMatch[1]);
       if (id === user.id) {
         return sendJson(response, 400, { error: "O usuário autenticado não pode excluir a própria conta." });
       }
-      db.prepare("DELETE FROM users WHERE id = ?").run(id);
+      await query("DELETE FROM users WHERE id = ?", [id]);
       return sendJson(response, 204, null);
     }
 
@@ -265,7 +290,7 @@ const server = createServer(async (request, response) => {
     if (reportMatch && method === "GET") {
       const view = reports[reportMatch[1]];
       if (!view) return sendJson(response, 404, { error: "Relatório não encontrado." });
-      return sendJson(response, 200, db.prepare(`SELECT * FROM ${view}`).all());
+      return sendJson(response, 200, await query(`SELECT * FROM ${view}`));
     }
 
     const entityMatch = path.match(/^\/api\/([a-z_]+)(?:\/(\d+))?$/);
@@ -277,16 +302,16 @@ const server = createServer(async (request, response) => {
       // Exceção para medical_records: usar a view que já tem o nome do aluno
       const sourceTable = table === "medical_records" && id === null ? "vw_medical_forms" : table;
       if (method === "GET" && id === null) {
-        return sendJson(response, 200, db.prepare(`SELECT * FROM ${sourceTable} ORDER BY id DESC`).all());
+        return sendJson(response, 200, await query(`SELECT * FROM ${sourceTable} ORDER BY id DESC`));
       }
       if (method === "POST" && id === null) {
-        return sendJson(response, 201, createEntity(table, allowed, await readBody(request)));
+        return sendJson(response, 201, await createEntity(table, allowed, await readBody(request)));
       }
       if (method === "PUT" && id !== null) {
-        return sendJson(response, 200, updateEntity(table, allowed, id, await readBody(request)));
+        return sendJson(response, 200, await updateEntity(table, allowed, id, await readBody(request)));
       }
       if (method === "DELETE" && id !== null) {
-        db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+        await query(`DELETE FROM ${table} WHERE id = ?`, [id]);
         return sendJson(response, 204, null);
       }
     }
@@ -294,13 +319,23 @@ const server = createServer(async (request, response) => {
     return sendJson(response, 404, { error: "Recurso não encontrado." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno.";
-    const conflict = /UNIQUE constraint failed/i.test(message);
+    const conflict = error?.code === "ER_DUP_ENTRY";
     sendJson(response, conflict ? 409 : 400, {
       error: conflict ? "Já existe um registro com esses dados." : message,
     });
   }
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Recrescer API ouvindo na porta ${port}`);
+async function start() {
+  await initializeDatabase();
+  await ensureAdmin();
+  await query("DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP");
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Recrescer API ouvindo na porta ${port}`);
+  });
+}
+
+start().catch((error) => {
+  console.error("Não foi possível iniciar a API:", error.message);
+  process.exit(1);
 });
