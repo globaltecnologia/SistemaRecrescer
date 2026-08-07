@@ -154,6 +154,22 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
     };
   }
 
+  if (page === "medical_records") {
+    // Grid de Ficha Mu00e9dica: apenas nome do aluno
+    hiddenColumns = [
+      "id", "created_at", "updated_at",
+      "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone",
+      "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone",
+      "health_plan", "emergency_hospital",
+      "measles", "chickenpox", "mumps", "rubella", "pertussis",
+      "other_common_diseases", "allergies", "fever_medication",
+      "tetanus_vaccine", "tetanus_vaccine_date",
+      "respiratory_disease", "neurological_disease",
+      "blood_type", "rh_factor", "notes"
+    ];
+    columnLabels = { student_id: "Nome do aluno" };
+  }
+
   if (page === "fathers") {
     // Grid de Pais: apenas Nome do Pai, Telefone Residencial e Telefone Comercial
     hiddenColumns = [
@@ -170,6 +186,24 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
       name: "Nome do Pai",
       residential_phone: "Telefone Residencial",
       commercial_phone: "Telefone Comercial"
+    };
+  }
+
+  if (page === "medical_records") {
+    // Grid de Ficha Mu00e9dica: apenas nome do aluno
+    hiddenColumns = [
+      "id", "created_at", "updated_at",
+      "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone",
+      "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone",
+      "health_plan", "emergency_hospital",
+      "measles", "chickenpox", "mumps", "rubella", "pertussis",
+      "other_common_diseases", "allergies", "fever_medication",
+      "tetanus_vaccine", "tetanus_vaccine_date",
+      "respiratory_disease", "neurological_disease",
+      "blood_type", "rh_factor", "notes"
+    ];
+    columnLabels = {
+      student_name: "Nome do aluno"
     };
   }
   
