@@ -1,0 +1,79 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-recrescer}
+      MYSQL_USER: ${MYSQL_USER:-recrescer}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-recrescer}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-altere-esta-senha}
+    volumes:
+      - recrescer_mysql:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: npm run api
+    environment:
+      PORT: "3001"
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-1234}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-recrescer}
+      MYSQL_USER: ${MYSQL_USER:-recrescer}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-recrescer}
+    ports:
+      - "3002:3001"
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    build: .
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_API_PROXY: http://api:3001
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: npm run test:functional
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: recrescer_test
+      MYSQL_USER: recrescer
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-recrescer}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src:ro
+      - ./server:/app/server:ro
+      - ./tests:/app/tests:ro
+      - ./public:/app/public:ro
+      - ./index.html:/app/index.html:ro
+      - ./playwright.config.ts:/app/playwright.config.ts:ro
+      - ./vite.config.ts:/app/vite.config.ts:ro
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+
+volumes:
+  recrescer_mysql:
