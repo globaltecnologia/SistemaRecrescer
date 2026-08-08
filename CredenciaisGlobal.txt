@@ -1,4 +1,0 @@
-Servidor: ec2-52-35-72-85.us-west-2.compute.amazonaws.com / recrescer.globaltecnologia.net
-
-Login: Administrator
-Senha: ?R4KVwXP8Z
