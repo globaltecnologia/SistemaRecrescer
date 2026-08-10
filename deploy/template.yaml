@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: API do Sistema Recrescer em AWS Lambda
+
+Parameters:
+  FunctionName:
+    Type: String
+  MysqlHost:
+    Type: String
+  MysqlPort:
+    Type: Number
+    Default: 3306
+  MysqlDatabase:
+    Type: String
+  MysqlUser:
+    Type: String
+  MysqlPassword:
+    Type: String
+    NoEcho: true
+  MysqlSslMode:
+    Type: String
+    Default: required
+    AllowedValues:
+      - disabled
+      - required
+  MysqlSslCaBase64:
+    Type: String
+    Default: ''
+    NoEcho: true
+  AdminLogin:
+    Type: String
+  AdminPassword:
+    Type: String
+    NoEcho: true
+  CorsOrigin:
+    Type: String
+    Default: '*'
+  ReservedConcurrency:
+    Type: Number
+    Default: 10
+    MinValue: 1
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: Dockerfile.lambda
+      DockerContext: ..
+      DockerTag: node22-x86_64
+    Properties:
+      FunctionName: !Ref FunctionName
+      PackageType: Image
+      Architectures:
+        - x86_64
+      MemorySize: 512
+      Timeout: 15
+      ReservedConcurrentExecutions: !Ref ReservedConcurrency
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          PORT: '8080'
+          MYSQL_HOST: !Ref MysqlHost
+          MYSQL_PORT: !Ref MysqlPort
+          MYSQL_DATABASE: !Ref MysqlDatabase
+          MYSQL_USER: !Ref MysqlUser
+          MYSQL_PASSWORD: !Ref MysqlPassword
+          MYSQL_SSL_MODE: !Ref MysqlSslMode
+          MYSQL_SSL_CA_BASE64: !Ref MysqlSslCaBase64
+          ADMIN_LOGIN: !Ref AdminLogin
+          ADMIN_PASSWORD: !Ref AdminPassword
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - !Ref CorsOrigin
+          AllowHeaders:
+            - Authorization
+            - Content-Type
+          AllowMethods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+          MaxAge: 600
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ApiFunction}
+      RetentionInDays: 14
+
+Outputs:
+  ApiFunctionUrl:
+    Description: URL pública da API
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  ApiFunctionName:
+    Description: Nome da função Lambda
+    Value: !Ref ApiFunction

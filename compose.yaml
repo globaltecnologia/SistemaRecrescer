@@ -46,7 +46,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "5173:5173"
+      - "6174:5173"
     restart: unless-stopped
 
   tests:
