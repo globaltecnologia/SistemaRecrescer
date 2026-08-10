@@ -27,3 +27,5 @@ data/
 *.db-wal
 test-results/
 playwright-report/
+deploy/config.env
+.aws-sam/

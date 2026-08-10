@@ -7,6 +7,13 @@ import mysql from "mysql2/promise";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = Number(process.env.PORT ?? 3001);
+const mysqlSslMode = process.env.MYSQL_SSL_MODE ?? "disabled";
+if (!new Set(["disabled", "required"]).has(mysqlSslMode)) {
+  throw new Error("MYSQL_SSL_MODE deve ser disabled ou required.");
+}
+const mysqlSslCa = process.env.MYSQL_SSL_CA_BASE64
+  ? Buffer.from(process.env.MYSQL_SSL_CA_BASE64, "base64").toString("utf8")
+  : undefined;
 const databaseConfig = {
   host: process.env.MYSQL_HOST ?? "127.0.0.1",
   port: Number(process.env.MYSQL_PORT ?? 3306),
@@ -18,6 +25,9 @@ const databaseConfig = {
   multipleStatements: true,
   charset: "utf8mb4",
   timezone: "Z",
+  ssl: mysqlSslMode === "required"
+    ? { rejectUnauthorized: true, ...(mysqlSslCa ? { ca: mysqlSslCa } : {}) }
+    : undefined,
 };
 const db = mysql.createPool(databaseConfig);
 

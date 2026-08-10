@@ -15,6 +15,7 @@ export interface LoginResult {
 }
 
 let token = sessionStorage.getItem("recrescer.token") ?? "";
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 export function hasStoredToken() {
   return Boolean(token);
@@ -26,7 +27,7 @@ export function clearToken() {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${apiBaseUrl}/api${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
