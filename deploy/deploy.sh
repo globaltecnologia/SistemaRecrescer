@@ -30,7 +30,7 @@ sam deploy \
     "MysqlUser=${MYSQL_USER}" \
     "MysqlPassword=${MYSQL_PASSWORD}" \
     "MysqlSslMode=${MYSQL_SSL_MODE}" \
-    "MysqlSslCaBase64=${MYSQL_SSL_CA_BASE64:-}" \
+    $( [ -n "${MYSQL_SSL_CA_BASE64:-}" ] && echo "MysqlSslCaBase64=${MYSQL_SSL_CA_BASE64}" ) \
     "AdminLogin=${ADMIN_LOGIN}" \
     "AdminPassword=${ADMIN_PASSWORD}" \
     "CorsOrigin=${CORS_ORIGIN}" \

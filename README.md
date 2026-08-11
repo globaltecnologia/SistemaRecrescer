@@ -1,6 +1,8 @@
 # Sistema Recrescer
 
-Modernização inicial do sistema legado de gestão escolar, com React 19 e `@alexandretorqueti/biblioteca-global-ui` 0.1.9.
+Modernização do sistema legado de gestão escolar, com React 19, `@alexandretorqueti/biblioteca-global-ui` (^0.1.19), API Node.js e MySQL 8.4.
+
+Arquitetura e deploy estão documentados em `docs/ARCHITECTURE.md` e `docs/DEPLOYMENT.md`.
 
 ## Execução com Docker
 
@@ -9,18 +11,20 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:3001/api/health`
-- Banco SQLite persistente: volume Docker `recrescer_data`
+- Frontend: `http://localhost:6174` (porta 5173 dentro do container)
+- API: `http://localhost:3002/api/health` (porta 3001 dentro do container)
+- Banco MySQL 8.4 persistente: volume Docker `recrescer_mysql` (container `mysql`, porta 3307 no host)
 
-No primeiro start a API cria o usuário definido em `ADMIN_LOGIN`/`ADMIN_PASSWORD`. Se as variáveis não forem definidas, somente para desenvolvimento, os valores padrão são `admin` / `recrescer`.
+No primeiro start a API cria o usuário definido em `ADMIN_LOGIN`/`ADMIN_PASSWORD`. Rodando a API fora do Docker (`npm run api`) sem as variáveis, os valores padrão são `admin` / `recrescer`; no `compose.yaml` o padrão da senha é `1234`.
 
 ## Estrutura
 
 - `src/`: aplicação React, navegação, data sources e telas.
 - `server/index.mjs`: API, autenticação e CRUDs.
 - `server/schema.sql`: tabelas, índices e views de relatórios.
-- `compose.yaml`: frontend e API.
+- `compose.yaml`: frontend, API e MySQL.
+- `docs/`: arquitetura e deploy (fontes atuais).
+- `deploy/`: scripts e infraestrutura (SAM) de produção; `deploy/config.env` contém credenciais e nunca deve ser versionado.
 
 ## Funcionalidades
 
@@ -49,4 +53,4 @@ A suíte Playwright cobre autenticação, inclusão, pesquisa, abertura/edição
 docker compose --profile test run --rm tests
 ```
 
-O container de testes usa a imagem oficial do Playwright com Chromium. Durante a suíte, API e Vite são iniciados isoladamente em `3101` e `5175`; o SQLite fica em `test-results/data`.
+O container de testes usa a imagem oficial do Playwright com Chromium. Durante a suíte, API e Vite são iniciados isoladamente em `3101` e `5175`; os testes usam o banco MySQL `recrescer_test` no container `mysql`.
