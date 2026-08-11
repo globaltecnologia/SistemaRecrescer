@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback, type FormEvent, type MouseEvent } from "react";
 import {
   AuthPanel,
   Cadastro,
   JsonGrid,
+
   type AuthValues,
 } from "@alexandretorqueti/biblioteca-global-ui";
 import {
@@ -18,6 +19,8 @@ import {
   updateUser,
   type SessionUser,
   type UiRecord,
+  createCompleteEnrollment,
+  type EnrollmentPayload,
 } from "./api";
 import { entities, reports, type PageKey, type References } from "./catalog";
 import "./App.css";
@@ -89,18 +92,587 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (user: SessionUser)
   );
 }
 
+// --- Helper para obter dados do pai a partir da lista de pais ---
+function findFatherById(list: UiRecord[], id?: number | null): UiRecord | undefined {
+  if (!id) return undefined;
+  return list.find(r => String(r.id) === String(id));
+}
+
+function findMotherById(list: UiRecord[], id?: number | null): UiRecord | undefined {
+  if (!id) return undefined;
+  return list.find(r => String(r.id) === String(id));
+}
+
+// --- Seção: Pai (Autocomplete + campos editáveis) ---
+function FatherSection({ fathers, value, onChange }: {
+  fathers: UiRecord[];
+  value: Partial<UiRecord>;
+  onChange: (updates: Partial<UiRecord>) => void;
+}) {
+  const [searchText, setSearchText] = useState("");
+  const [filtered, setFiltered] = useState<UiRecord[]>(fathers);
+  
+  ;
+
+  const hasSelection = value.id && Number(value.id) > 0;
+
+  useEffect(() => {
+    // Se já tem seleção válida, mostrar nome no campo de busca
+    if (hasSelection) {
+      const sel = findFatherById(fathers, Number(value.id));
+      if (sel) setSearchText(String(sel.name ?? ""));
+    } else {
+      setSearchText("");
+    }
+  }, [value?.id, fathers]);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null!);
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!searchText) { setFiltered(fathers); return; }
+    
+    debounceRef.current = setTimeout(() => {
+      const q = searchText.toLowerCase();
+      setFiltered(fathers.filter(r => (String(r.name ?? "") + " " + String(r.cpf ?? "")).toLowerCase().includes(q)));
+      
+    }, 200);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchText, fathers]);
+
+  const handleSelect = (student: UiRecord | null) => {
+    if (!student) {
+      // Desseleção — limpar todos os campos do pai
+      onChange({ id: undefined, name: "", cpf: "", residential_address: "", residential_number: "", residential_complement: "", residential_district: "", residential_city: "", residential_state: "", residential_zip: "", residential_phone: "", commercial_address: "", commercial_number: "", commercial_complement: "", commercial_district: "", commercial_city: "", commercial_state: "", commercial_zip: "", commercial_phone: "" });
+      setSearchText("");
+    } else {
+      onChange({ id: student.id, name: student.name, cpf: student.cpf, residential_address: student.residential_address, residential_number: student.residential_number, residential_complement: student.residential_complement, residential_district: student.residential_district, residential_city: student.residential_city, residential_state: student.residential_state, residential_zip: student.residential_zip, residential_phone: student.residential_phone, commercial_address: student.commercial_address, commercial_number: student.commercial_number, commercial_complement: student.commercial_complement, commercial_district: student.commercial_district, commercial_city: student.commercial_city, commercial_state: student.commercial_state, commercial_zip: student.commercial_zip, commercial_phone: student.commercial_phone });
+      setSearchText(String(student.name ?? ""));
+    }
+  };
+
+  const handleChange = (field: string, val: any) => {
+    onChange({ [field]: val });
+  };
+
+  return (
+    <fieldset style={{ border: "1px solid #ccc", borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <legend style={{ fontWeight: 600, fontSize: 14 }}>👨 Pai</legend>
+      {/* Campo nome com Autocomplete simulado (select + texto editável) */}
+      <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Nome do pai</label>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <input
+          type="text"
+          value={searchText}
+          onChange={e => { setSearchText(e.target.value); if (hasSelection && e.target.value !== String(value.name ?? "")) handleSelect(null); }}
+          placeholder="Buscar ou digitar novo..."
+          style={{ flex: 1, padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4 }}
+        />
+        <button type="button" onClick={() => handleSelect(null)} title="Limpar seleção" style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }}>✕</button>
+      </div>
+      {/* Dropdown de sugestões */}
+      {searchText && filtered.length > 0 && (
+        <div style={{ maxHeight: 160, overflowY: "auto", border: "1px solid #ccc", borderRadius: 4, marginBottom: 12, background: "#fff" }}>
+          {filtered.map(r => (
+            <div key={String(r.id)} onClick={() => handleSelect(r)} style={{ padding: "6px 10px", cursor: "pointer", borderBottom: "1px solid #eee" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#f0f4ff")}
+              onMouseLeave={e => (e.currentTarget.style.background = "")}>
+              {String(r.name ?? "")} — {String(r.cpf || "")}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Campos editáveis */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>CPF</span><input type="text" value={String(value.cpf ?? "")} onChange={e => handleChange("cpf", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Tel. Residencial</span><input type="text" value={String(value.residential_phone ?? "")} onChange={e => handleChange("residential_phone", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Tel. Comercial</span><input type="text" value={String(value.commercial_phone ?? "")} onChange={e => handleChange("commercial_phone", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Endereço</span><input type="text" value={String(value.residential_address ?? "")} onChange={e => handleChange("residential_address", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Número</span><input type="text" value={String(value.residential_number ?? "")} onChange={e => handleChange("residential_number", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Complemento</span><input type="text" value={String(value.residential_complement ?? "")} onChange={e => handleChange("residential_complement", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Bairro</span><input type="text" value={String(value.residential_district ?? "")} onChange={e => handleChange("residential_district", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Cidade</span><input type="text" value={String(value.residential_city ?? "")} onChange={e => handleChange("residential_city", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Estado</span><input type="text" value={String(value.residential_state ?? "")} onChange={e => handleChange("residential_state", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>CEP</span><input type="text" value={String(value.residential_zip ?? "")} onChange={e => handleChange("residential_zip", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+      </div>
+    </fieldset>
+  );
+}
+
+// --- Seção: Mãe (Autocomplete + campos editáveis) ---
+function MotherSection({ mothers, value, onChange }: {
+  mothers: UiRecord[];
+  value: Partial<UiRecord>;
+  onChange: (updates: Partial<UiRecord>) => void;
+}) {
+  const [searchText, setSearchText] = useState("");
+  const [filtered, setFiltered] = useState<UiRecord[]>(mothers);
+  
+  ;
+
+  const hasSelection = value.id && Number(value.id) > 0;
+
+  useEffect(() => {
+    if (hasSelection) {
+      const sel = findMotherById(mothers, Number(value.id));
+      if (sel) setSearchText(String(sel.name ?? ""));
+    } else {
+      setSearchText("");
+    }
+  }, [value?.id, mothers]);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null!);
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!searchText) { setFiltered(mothers); return; }
+    
+    debounceRef.current = setTimeout(() => {
+      const q = searchText.toLowerCase();
+      setFiltered(mothers.filter(r => (String(r.name ?? "") + " " + String(r.cpf ?? "")).toLowerCase().includes(q)));
+      
+    }, 200);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchText, mothers]);
+
+  const handleSelect = (student: UiRecord | null) => {
+    if (!student) {
+      onChange({ id: undefined, name: "", cpf: "", residential_address: "", residential_number: "", residential_complement: "", residential_district: "", residential_city: "", residential_state: "", residential_zip: "", residential_phone: "", commercial_address: "", commercial_number: "", commercial_complement: "", commercial_district: "", commercial_city: "", commercial_state: "", commercial_zip: "", commercial_phone: "" });
+      setSearchText("");
+    } else {
+      onChange({ id: student.id, name: student.name, cpf: student.cpf, residential_address: student.residential_address, residential_number: student.residential_number, residential_complement: student.residential_complement, residential_district: student.residential_district, residential_city: student.residential_city, residential_state: student.residential_state, residential_zip: student.residential_zip, residential_phone: student.residential_phone, commercial_address: student.commercial_address, commercial_number: student.commercial_number, commercial_complement: student.commercial_complement, commercial_district: student.commercial_district, commercial_city: student.commercial_city, commercial_state: student.commercial_state, commercial_zip: student.commercial_zip, commercial_phone: student.commercial_phone });
+      setSearchText(String(student.name ?? ""));
+    }
+  };
+
+  const handleChange = (field: string, val: any) => {
+    onChange({ [field]: val });
+  };
+
+  return (
+    <fieldset style={{ border: "1px solid #ccc", borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <legend style={{ fontWeight: 600, fontSize: 14 }}>👩 Mãe</legend>
+      <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Nome da mãe</label>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <input
+          type="text"
+          value={searchText}
+          onChange={e => { setSearchText(e.target.value); if (hasSelection && e.target.value !== String(value.name ?? "")) handleSelect(null); }}
+          placeholder="Buscar ou digitar novo..."
+          style={{ flex: 1, padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4 }}
+        />
+        <button type="button" onClick={() => handleSelect(null)} title="Limpar seleção" style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }}>✕</button>
+      </div>
+      {searchText && filtered.length > 0 && (
+        <div style={{ maxHeight: 160, overflowY: "auto", border: "1px solid #ccc", borderRadius: 4, marginBottom: 12, background: "#fff" }}>
+          {filtered.map(r => (
+            <div key={String(r.id)} onClick={() => handleSelect(r)} style={{ padding: "6px 10px", cursor: "pointer", borderBottom: "1px solid #eee" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#f0f4ff")}
+              onMouseLeave={e => (e.currentTarget.style.background = "")}>
+              {String(r.name ?? "")} — {String(r.cpf || "")}
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>CPF</span><input type="text" value={String(value.cpf ?? "")} onChange={e => handleChange("cpf", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Tel. Residencial</span><input type="text" value={String(value.residential_phone ?? "")} onChange={e => handleChange("residential_phone", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Tel. Comercial</span><input type="text" value={String(value.commercial_phone ?? "")} onChange={e => handleChange("commercial_phone", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Endereço</span><input type="text" value={String(value.residential_address ?? "")} onChange={e => handleChange("residential_address", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Número</span><input type="text" value={String(value.residential_number ?? "")} onChange={e => handleChange("residential_number", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Complemento</span><input type="text" value={String(value.residential_complement ?? "")} onChange={e => handleChange("residential_complement", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Bairro</span><input type="text" value={String(value.residential_district ?? "")} onChange={e => handleChange("residential_district", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Cidade</span><input type="text" value={String(value.residential_city ?? "")} onChange={e => handleChange("residential_city", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>Estado</span><input type="text" value={String(value.residential_state ?? "")} onChange={e => handleChange("residential_state", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+        <label><span style={{ fontWeight: 500, fontSize: 12 }}>CEP</span><input type="text" value={String(value.residential_zip ?? "")} onChange={e => handleChange("residential_zip", e.target.value)} style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} /></label>
+      </div>
+    </fieldset>
+  );
+}
+
+// --- Campo Autocomplete de Aluno integrado ao formulário ---
+function StudentAutocomplete({ students, fathers, mothers, value, onChange }: {
+  students: UiRecord[];
+  classes: UiRecord[];
+  shifts: UiRecord[];
+  fathers: UiRecord[];
+  mothers: UiRecord[];
+  value: Partial<UiRecord> & { father?: Partial<UiRecord>; mother?: Partial<UiRecord> };
+  onChange: (updates: Partial<UiRecord>, studentUpdates?: Partial<UiRecord>, fatherUpdates?: Partial<UiRecord>, motherUpdates?: Partial<UiRecord>) => void;
+}) {
+  const [searchText, setSearchText] = useState("");
+  const [filtered, setFiltered] = useState<UiRecord[]>(students);
+  
+  ;
+
+  const hasSelection = value.id && Number(value.id) > 0;
+
+  // Buscar/limpar ao selecionar/deselecionar aluno existente
+  useEffect(() => {
+    if (hasSelection) {
+      const sel = students.find(r => String(r.id) === String(value.id));
+      if (sel) setSearchText(String(sel.student_name ?? sel.name ?? ""));
+    } else {
+      setSearchText("");
+    }
+  }, [value?.id, students]);
+
+  // Filtrar alunos conforme digitação
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null!);
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!searchText) { setFiltered(students); return; }
+    
+    debounceRef.current = setTimeout(() => {
+      const q = searchText.toLowerCase();
+      setFiltered(students.filter(r => (String(r.student_name ?? r.name ?? "")).toLowerCase().includes(q)));
+      
+    }, 200);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchText, students]);
+
+  const handleSelect = (student: UiRecord | null) => {
+    if (!student) {
+      // Desseleção: limpar campos do aluno + resetar pai/mãe ao estado vazio
+      onChange({
+        id: undefined, name: "", birth_date: "", nationality: "", birthplace: "",
+        grade: "", education_level: "", address: "", phone: "", fp: "", ff: "",
+        scholarship: "", first_installment: "", pm: "", siblings_at_school: "",
+        notes: "", active: true, gender: "", class_id: "", shift_id: "", health_plan: "", blood_type: "", rh_factor: "",
+        father: { id: undefined, name: "", cpf: "", residential_address: "", residential_number: "", residential_complement: "", residential_district: "", residential_city: "", residential_state: "", residential_zip: "", residential_phone: "", commercial_address: "", commercial_number: "", commercial_complement: "", commercial_district: "", commercial_city: "", commercial_state: "", commercial_zip: "", commercial_phone: "" },
+        mother: { id: undefined, name: "", cpf: "", residential_address: "", residential_number: "", residential_complement: "", residential_district: "", residential_city: "", residential_state: "", residential_zip: "", residential_phone: "", commercial_address: "", commercial_number: "", commercial_complement: "", commercial_district: "", commercial_city: "", commercial_state: "", commercial_zip: "", commercial_phone: "" },
+      });
+      setSearchText("");
+    } else {
+      // Auto-preenchimento: aluno + pai/mãe vinculados
+      const fatherRef = findFatherById(fathers, (student as any).father_id);
+      const motherRef = findMotherById(mothers, (student as any).mother_id);
+
+      onChange(
+        {
+          id: student.id, name: student.student_name ?? student.name, birth_date: student.birth_date, nationality: student.nationality,
+          birthplace: student.birthplace, grade: student.grade, education_level: student.education_level,
+          address: student.address, phone: student.phone, fp: student.fp, ff: student.ff,
+          scholarship: student.scholarship, first_installment: student.first_installment, pm: student.pm,
+          siblings_at_school: student.siblings_at_school, notes: student.notes, active: (student.active !== false && student.active !== 0), gender: student.gender, class_id: student.class_id, shift_id: student.shift_id, health_plan: student.health_plan, blood_type: student.blood_type, rh_factor: student.rh_factor,
+        },
+        {
+          id: student.id, name: student.student_name ?? student.name, birth_date: student.birth_date, nationality: student.nationality, birthplace: student.birthplace, grade: student.grade, education_level: student.education_level, address: student.address, phone: student.phone, fp: student.fp, ff: student.ff, scholarship: student.scholarship, first_installment: student.first_installment, pm: student.pm, siblings_at_school: student.siblings_at_school, notes: student.notes, active: (student.active !== false && student.active !== 0), gender: student.gender, class_id: student.class_id, shift_id: student.shift_id, health_plan: student.health_plan, blood_type: student.blood_type, rh_factor: student.rh_factor,
+        },
+        // father data
+        fatherRef ? { id: fatherRef.id, name: fatherRef.name, cpf: fatherRef.cpf, residential_address: fatherRef.residential_address, residential_number: fatherRef.residential_number, residential_complement: fatherRef.residential_complement, residential_district: fatherRef.residential_district, residential_city: fatherRef.residential_city, residential_state: fatherRef.residential_state, residential_zip: fatherRef.residential_zip, residential_phone: fatherRef.residential_phone, commercial_address: fatherRef.commercial_address, commercial_number: fatherRef.commercial_number, commercial_complement: fatherRef.commercial_complement, commercial_district: fatherRef.commercial_district, commercial_city: fatherRef.commercial_city, commercial_state: fatherRef.commercial_state, commercial_zip: fatherRef.commercial_zip, commercial_phone: fatherRef.commercial_phone } : undefined,
+        // mother data
+        motherRef ? { id: motherRef.id, name: motherRef.name, cpf: motherRef.cpf, residential_address: motherRef.residential_address, residential_number: motherRef.residential_number, residential_complement: motherRef.residential_complement, residential_district: motherRef.residential_district, residential_city: motherRef.residential_city, residential_state: motherRef.residential_state, residential_zip: motherRef.residential_zip, residential_phone: motherRef.residential_phone, commercial_address: motherRef.commercial_address, commercial_number: motherRef.commercial_number, commercial_complement: motherRef.commercial_complement, commercial_district: motherRef.commercial_district, commercial_city: motherRef.commercial_city, commercial_state: motherRef.commercial_state, commercial_zip: motherRef.commercial_zip, commercial_phone: motherRef.commercial_phone } : undefined
+      );
+      setSearchText(String(student.student_name ?? student.name ?? ""));
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 14 }}>👤 Aluno</label>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <input
+          type="text"
+          value={searchText}
+          onChange={e => { setSearchText(e.target.value); if (hasSelection) handleSelect(null); }}
+          placeholder="Buscar aluno ou digitar nome para novo..."
+          style={{ flex: 1, padding: "8px 12px", border: "2px solid #4a90d9", borderRadius: 4, fontSize: 15 }}
+        />
+        {hasSelection && (
+          <button type="button" onClick={() => handleSelect(null)} title="Limpar seleção do aluno" style={{ padding: "6px 12px", border: "1px solid #ccc", borderRadius: 4, cursor: "pointer", background: "#f9f9f9" }}>✕</button>
+        )}
+      </div>
+      {searchText && filtered.length > 0 && (
+        <div style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #4a90d9", borderRadius: 4, marginBottom: 8, background: "#fff" }}>
+          {filtered.map(r => (
+            <div key={String(r.id)} onClick={() => handleSelect(r)} style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #eee" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#e8f0fe")}
+              onMouseLeave={e => (e.currentTarget.style.background = "")}>
+              <strong>{String(r.student_name ?? r.name)}</strong> {r.registration ? `— ${String(r.registration)}` : ""}
+            </div>
+          ))}
+        </div>
+      )}
+      {searchText && filtered.length === 0 && (
+        <div style={{ color: "#666", fontSize: 13, fontStyle: "italic" }}>Nenhum aluno encontrado — preencha os dados abaixo para criar um novo.</div>
+      )}
+    </div>
+  );
+}
+
+// --- Componente principal da Ficha de Matrícula ---
+function EnrollmentsPage({ references }: { references: References }) {
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [studentData, setStudentData] = useState<Partial<UiRecord>>({ active: true });
+  const [fatherData, setFatherData] = useState<Partial<UiRecord>>({});
+  const [motherData, setMotherData] = useState<Partial<UiRecord>>({});
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+
+  // Atualiza estado de aluno + pai/mãe de uma vez (chamado pelo StudentAutocomplete)
+  const handleStudentChange = useCallback((updates: Partial<UiRecord>, studentUpdates?: Partial<UiRecord>, fatherUpdates?: Partial<UiRecord>, motherUpdates?: Partial<UiRecord>) => {
+    if (studentUpdates) setStudentData(studentUpdates);
+    if (fatherUpdates !== undefined) setFatherData(fatherUpdates);
+    if (motherUpdates !== undefined) setMotherData(motherUpdates);
+    // Atualizar também formValues pra campos que podem ser editados manualmente depois
+    if (updates.name && studentData.name !== updates.name) setFormValues(prev => ({ ...prev, name: updates.name }));
+  }, [studentData.name]);
+
+  const handleEnrollmentFieldChange = useCallback((field: string, value: any) => {
+    setFormValues(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    
+
+    try {
+      const payload: EnrollmentPayload = {
+        student: studentData,
+        enrollment: formValues,
+      };
+
+      // Incluir pai se houver dados significativos (nome ou id)
+      if (fatherData.name || fatherData.id) {
+        payload.father = fatherData;
+      }
+      // Incluir mãe se houver dados significativos
+      if (motherData.name || motherData.id) {
+        payload.mother = motherData;
+      }
+
+      await createCompleteEnrollment(payload);
+
+      // Limpar formulário após sucesso
+      setStudentData({ active: true });
+      setFatherData({});
+      setMotherData({});
+      setFormValues({});
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Falha ao salvar matrícula.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section>
+      <div className="page-heading">
+        <div>
+          <h2>Ficha de Matrícula</h2>
+          <p>Selecione um aluno existente ou digite os dados para criar um novo. Todos os campos são editáveis.</p>
+        </div>
+      </div>
+
+      <ErrorNotice message={error} />
+
+      {loading && <div className="error-notice" role="alert">Salvando...</div>}
+
+      <form onSubmit={handleSubmit}>
+        {/* Campo aluno com Autocomplete */}
+        <StudentAutocomplete
+          students={references.students}
+          classes={references.classes}
+          shifts={references.shifts}
+          fathers={references.fathers}
+          mothers={references.mothers}
+          value={{ ...studentData, father: fatherData, mother: motherData }}
+          onChange={handleStudentChange}
+        />
+
+        {/* Seções Pai e Mãe */}
+        <FatherSection
+          fathers={references.fathers}
+          value={fatherData}
+          onChange={setFatherData}
+        />
+        <MotherSection
+          mothers={references.mothers}
+          value={motherData}
+          onChange={setMotherData}
+        />
+
+        {/* Separador visual */}
+        <div style={{ borderTop: "2px solid #4a90d9", margin: "20px 0" }} />
+
+        {/* Dados da matrícula */}
+        <h3 style={{ fontSize: 16, marginBottom: 12 }}>📋 Dados da Matrícula</h3>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+          {/* Ano */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Ano *</span>
+            <input type="number" required value={String(formValues.year ?? "")} onChange={e => handleEnrollmentFieldChange("year", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Sexo */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Sexo</span>
+            <select value={formValues.gender ?? ""} onChange={e => handleEnrollmentFieldChange("gender", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+              <option value="">Selecione...</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+              <option value="O">Outro</option>
+            </select>
+          </label>
+
+          {/* Turma requerida */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Turma requerida</span>
+            <select value={String(formValues.requested_class_id ?? "")} onChange={e => handleEnrollmentFieldChange("requested_class_id", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+              <option value="">Selecione...</option>
+              {references.classes.map((r: UiRecord) => (
+                <option key={String(r.id)} value={String(r.id)}>{String(r.name)}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* Turno requerido */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Turno requerido</span>
+            <select value={String(formValues.requested_shift_id ?? "")} onChange={e => handleEnrollmentFieldChange("requested_shift_id", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+              <option value="">Selecione...</option>
+              {references.shifts.map((r: UiRecord) => (
+                <option key={String(r.id)} value={String(r.id)}>{String(r.name)}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* Carga horária */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Carga horária</span>
+            <input type="text" value={String(formValues.contracted_hours ?? "")} onChange={e => handleEnrollmentFieldChange("contracted_hours", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Irmão na creche */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Irmão na creche</span>
+            <select value={String(formValues.siblings_in_daycare ?? "")} onChange={e => handleEnrollmentFieldChange("siblings_in_daycare", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+              <option value="">Selecione...</option>
+              <option value="1">Sim</option>
+              <option value="0">Não</option>
+            </select>
+          </label>
+
+          {/* Novo aluno */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Novo aluno?</span>
+            <select value={String(formValues.new_student ?? "")} onChange={e => handleEnrollmentFieldChange("new_student", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+              <option value="">Selecione...</option>
+              <option value="1">Sim</option>
+              <option value="0">Não</option>
+            </select>
+          </label>
+
+          {/* Escola de origem */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Escola de origem</span>
+            <input type="text" value={String(formValues.origin_school ?? "")} onChange={e => handleEnrollmentFieldChange("origin_school", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Mora com */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Mora com</span>
+            <input type="text" value={String(formValues.lives_with ?? "")} onChange={e => handleEnrollmentFieldChange("lives_with", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Nome do responsável */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Nome do responsável</span>
+            <input type="text" value={String(formValues.guardian_name ?? "")} onChange={e => handleEnrollmentFieldChange("guardian_name", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Grau de parentesco */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Grau de parentesco</span>
+            <input type="text" value={String(formValues.guardian_relationship ?? "")} onChange={e => handleEnrollmentFieldChange("guardian_relationship", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Detalhes dos irmãos */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Detalhes dos irmãos</span>
+            <input type="text" value={String(formValues.siblings_details ?? "")} onChange={e => handleEnrollmentFieldChange("siblings_details", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Série anterior */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Série/Curso/Turno anterior</span>
+            <input type="text" value={String(formValues.previous_grade_course_shift ?? "")} onChange={e => handleEnrollmentFieldChange("previous_grade_course_shift", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Nacionalidade */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Nacionalidade</span>
+            <input type="text" value={String(formValues.nationality ?? "")} onChange={e => handleEnrollmentFieldChange("nationality", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Naturalidade */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Naturalidade</span>
+            <input type="text" value={String(formValues.birthplace ?? "")} onChange={e => handleEnrollmentFieldChange("birthplace", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+
+          {/* Data de nascimento */}
+          <label>
+            <span style={{ fontWeight: 500 }}>Data de nascimento</span>
+            <input type="date" value={String(formValues.birth_date ?? "")} onChange={e => handleEnrollmentFieldChange("birth_date", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+          </label>
+        </div>
+
+        {/* Botão salvar */}
+        <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
+          <button type="submit" className="primary-button" disabled={loading}>
+            {loading ? "Salvando..." : "Salvar Matrícula"}
+          </button>
+        </div>
+      </form>
+
+      {/* Lista de matrículas existentes */}
+      <EnrollmentGrid />
+    </section>
+  );
+}
+
+// --- Grid de matrículas existentes (leitura + impressão) ---
+function EnrollmentGrid() {
+  const [rows, setRows] = useState<UiRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    listRecords("enrollments")
+      .then(data => { if (active) setRows(data); })
+      .catch(() => {})
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  if (rows.length === 0 && loading) return <div>Carregando matrículas...</div>;
+
+  return (
+    <section style={{ marginTop: 32 }}>
+      <h3 style={{ fontSize: 16, marginBottom: 12 }}>📋 Matrículas existentes</h3>
+      <JsonGrid
+        data={rows} loading={loading}
+        hiddenColumns={["id", "created_at", "updated_at"]}
+        columnLabels={{ year: "Ano", student_name: "Aluno" }}
+      />
+    </section>
+  );
+}
+
 function EntityPage({ page, references }: { page: PageKey; references: References }) {
   const definition = entities[page];
   const resource = definition?.resource ?? "";
   const dataSource = useMemo(() => createDataSource(resource), [resource]);
   if (!definition) return null;
-  
+
   // Configurações específicas por entidade
   let hiddenColumns = ["id", "created_at", "updated_at"];
   let columnLabels: Record<string, string> = {};
 
   if (page === "students") {
-    // Grid de Alunos: apenas Matrícula, Série e Nome do Aluno
     hiddenColumns = [
       "id", "created_at", "updated_at",
       "birth_date", "gender", "nationality", "birthplace",
@@ -116,27 +688,7 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
     };
   }
 
-  if (page === "enrollments") {
-    // Ficha de Matrícula: apenas Ano, Nome do aluno e Turma (com nome da turma do backend)
-    hiddenColumns = [
-      "id", "created_at", "updated_at",
-      "student_id", "birth_date", "nationality", "birthplace", "previous_grade_course_shift",
-      "gender", "father_name", "father_phone", "father_cpf",
-      "mother_name", "mother_phone", "mother_cpf",
-      "lives_with", "student_address", "student_phone",
-      "guardian_name", "guardian_relationship",
-      "siblings_in_daycare", "siblings_details", "new_student", "origin_school",
-      "requested_class_id", "requested_shift_id", "contracted_hours"
-    ];
-    columnLabels = {
-      year: "Ano",
-      student_name: "Aluno",
-      class_name: "Turma"
-    };
-  }
-
   if (page === "mothers") {
-    // Grid de Mães: apenas Nome da Mãe, Telefone Residencial e Telefone Comercial
     hiddenColumns = [
       "id", "created_at", "updated_at",
       "cpf",
@@ -155,10 +707,9 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
   }
 
   if (page === "medical_records") {
-    // Grid de Ficha Médica: apenas nome do aluno (agora student_name retornado pelo backend com JOIN)
     hiddenColumns = [
       "id", "created_at", "updated_at",
-      "student_id",  // Escondido pois agora temos student_name
+      "student_id",
       "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone",
       "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone",
       "health_plan", "emergency_hospital",
@@ -174,7 +725,6 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
   }
 
   if (page === "fathers") {
-    // Grid de Pais: apenas Nome do Pai, Telefone Residencial e Telefone Comercial
     hiddenColumns = [
       "id", "created_at", "updated_at",
       "cpf",
@@ -191,7 +741,7 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
       commercial_phone: "Telefone Comercial"
     };
   }
-  
+
   return (
     <Cadastro
       title={definition.title}
@@ -310,11 +860,9 @@ function ReportPage({ page }: { page: PageKey }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Configurações específicas por entidade
   let hiddenColumns = ["id", "created_at", "updated_at"];
   let columnLabels: Record<string, string> = {};
   if (page === "report-enrollment") {
-    // Ficha de Matrícula: apenas Ano, Nome do aluno e Turma (com nome da turma do backend)
     hiddenColumns = [
       "id", "created_at", "updated_at",
       "student_id", "birth_date", "nationality", "birthplace", "previous_grade_course_shift",
@@ -334,7 +882,7 @@ function ReportPage({ page }: { page: PageKey }) {
   } else if (page === "report-medical") {
     hiddenColumns = [
       "id", "created_at", "updated_at",
-      "student_id",  // Escondido pois agora temos student_name
+      "student_id",
       "emergency_contact_name", "emergency_contact_relationship", "emergency_contact_phone",
       "secondary_contact_name", "secondary_contact_relationship", "secondary_contact_phone",
       "health_plan", "emergency_hospital",
@@ -352,13 +900,12 @@ function ReportPage({ page }: { page: PageKey }) {
     };
   }
 
-
   useEffect(() => {
     if (!definition) return;
     let active = true;
     setSelectedEnrollment(null);
     setError("");
-    setLoading(true);
+    
     listReport(definition.endpoint)
       .then((data) => { if (active) setRows(data); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Falha ao carregar relatório."); })
@@ -505,7 +1052,8 @@ function AuthenticatedApp({ user, onLogout }: { user: SessionUser; onLogout: () 
         <header className="topbar no-print"><div><strong>Sistema Recrescer</strong><span>{user.name} · {user.login}</span></div><button type="button" onClick={() => void doLogout()}>Sair</button></header>
         <div className="page-content">
           {page === "home" && <Dashboard references={references} />}
-          {entities[page] && <EntityPage page={page} references={references} />}
+          {page === "enrollments" && <EnrollmentsPage references={references} />}
+          {entities[page] && page !== "enrollments" && <EntityPage page={page} references={references} />}
           {page === "users" && <UsersPage />}
           {isReport && <ReportPage page={page} />}
         </div>
@@ -514,9 +1062,8 @@ function AuthenticatedApp({ user, onLogout }: { user: SessionUser; onLogout: () 
   );
 }
 
-interface AppProps {}
 
-export default function App({}: AppProps) {
+export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [checking, setChecking] = useState(hasStoredToken());
 

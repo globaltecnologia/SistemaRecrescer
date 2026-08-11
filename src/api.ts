@@ -3,6 +3,19 @@ import type { CadastroDataSource } from "@alexandretorqueti/biblioteca-global-ui
 export type UiValue = string | number | boolean | null | object | undefined;
 export type UiRecord = Record<string, UiValue>;
 
+export interface EnrollmentPayload {
+  student: Partial<UiRecord>;
+  father?: Partial<UiRecord>; // pode conter id (existing) ou dados novos
+  mother?: Partial<UiRecord>; // pode conter id (existing) ou dados novos
+  enrollment?: Partial<UiRecord>;
+}
+
+export interface EnrollmentResult {
+  student: UiRecord;
+  fatherId: number | null;
+  motherId: number | null;
+}
+
 export interface SessionUser {
   id: number;
   name: string;
@@ -100,4 +113,11 @@ export async function updateUser(id: number, values: { name: string; login: stri
 
 export async function deleteUser(id: number) {
   return request<void>(`/users/${id}`, { method: "DELETE" });
+}
+
+export async function createCompleteEnrollment(payload: EnrollmentPayload): Promise<EnrollmentResult> {
+  return request<EnrollmentResult>("/enrollments/complete", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

@@ -201,6 +201,137 @@ async function ensureAdmin() {
   console.warn(`Usuário inicial criado: ${login}. Altere a senha após o primeiro acesso.`);
 }
 
+async function handleEnrollmentComplete(request, response) {
+  const body = await readBody(request);
+  if (!body || (!body.student && !body.enrollment)) {
+    return sendJson(response, 400, { error: "Dados de aluno ou matrícula são obrigatórios." });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // --- 1. Pai (se fornecido) ---
+    let fatherId = null;
+    if (body.father) {
+      const existing = body.father.id && body.father.id > 0
+        ? await connection.query("SELECT id FROM fathers WHERE id = ?", [body.father.id])[0][0] ?? null
+        : null;
+      if (existing) {
+        fatherId = existing.id;
+        const fields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
+          .filter(k => Object.hasOwn(body.father, k));
+        const sets = fields.map(f => `${f} = ?`).join(", ");
+        await connection.query(`UPDATE fathers SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [...fields.map(f => body.father[f] === "" ? null : body.father[f]), fatherId]);
+      } else {
+        const insertFields = fields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
+          .filter(k => body.father[k] !== undefined && body.father[k] !== "");
+        const placeholders = insertFields.map(() => "?").join(", ");
+        if (insertFields.length > 0) {
+          const result = await connection.query(
+            `INSERT INTO fathers (${insertFields.join(", ")}) VALUES (${placeholders})`,
+            insertFields.map(f => body.father[f] === "" ? null : body.father[f]));
+          fatherId = result.insertId;
+        }
+      }
+    }
+
+    // --- 2. Mãe (se fornecido) ---
+    let motherId = null;
+    if (body.mother) {
+      const existing = body.mother.id && body.mother.id > 0
+        ? await connection.query("SELECT id FROM mothers WHERE id = ?", [body.mother.id])[0][0] ?? null
+        : null;
+      if (existing) {
+        motherId = existing.id;
+        const fields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
+          .filter(k => Object.hasOwn(body.mother, k));
+        const sets = fields.map(f => `${f} = ?`).join(", ");
+        await connection.query(`UPDATE mothers SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [...fields.map(f => body.mother[f] === "" ? null : body.mother[f]), motherId]);
+      } else {
+        const insertFields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
+          .filter(k => body.mother[k] !== undefined && body.mother[k] !== "");
+        const placeholders = insertFields.map(() => "?").join(", ");
+        if (insertFields.length > 0) {
+          const result = await connection.query(
+            `INSERT INTO mothers (${insertFields.join(", ")}) VALUES (${placeholders})`,
+            insertFields.map(f => body.mother[f] === "" ? null : body.mother[f]));
+          motherId = result.insertId;
+        }
+      }
+    }
+
+    // --- 3. Aluno ---
+    let studentId = null;
+    const s = body.student;
+    if (s.id && s.id > 0) {
+      studentId = s.id;
+      const fields = ["registration","name","birth_date","gender","nationality","birthplace","grade","education_level","class_id","shift_id","health_plan","blood_type","rh_factor","address","phone","fp","ff","scholarship","first_installment","pm","siblings_at_school","father_id","mother_id","notes","active"]
+        .filter(k => Object.hasOwn(s, k));
+      const sets = fields.map(f => `${f} = ?`).join(", ");
+      await connection.query(`UPDATE students SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [...fields.map(f => s[f] === "" ? null : s[f]), studentId]);
+    } else {
+      const insertFields = ["registration","name","birth_date","gender","nationality","birthplace","grade","education_level","class_id","shift_id","health_plan","blood_type","rh_factor","address","phone","fp","ff","scholarship","first_installment","pm","siblings_at_school","father_id","mother_id","notes","active"]
+        .filter(k => s[k] !== undefined && s[k] !== "" && s[k] !== null);
+      const placeholders = insertFields.map(() => "?").join(", ");
+      if (insertFields.length > 1) {
+        const result = await connection.query(
+          `INSERT INTO students (${insertFields.join(", ")}) VALUES (${placeholders})`,
+          insertFields.map(f => s[f]));
+        studentId = result.insertId;
+      }
+    }
+
+    if (!studentId) {
+      return sendJson(response, 400, { error: "É necessário informar ao menos o nome do aluno." });
+    }
+
+    // --- 4. Vincular pai/mãe se novo e não foram vinculados ainda pelo form student ---
+    if (!s.father_id && fatherId) {
+      await connection.query("UPDATE students SET father_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [fatherId, studentId]);
+    }
+    if (!s.mother_id && motherId) {
+      await connection.query("UPDATE students SET mother_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [motherId, studentId]);
+    }
+
+    // --- 5. Matrícula ---
+    const e = body.enrollment;
+    if (e) {
+      const allowed = ["year","student_id","birth_date","nationality","birthplace","previous_grade_course_shift","gender","father_name","father_phone","father_cpf","mother_name","mother_phone","mother_cpf","lives_with","student_address","student_phone","guardian_name","guardian_relationship","siblings_in_daycare","siblings_details","new_student","origin_school","requested_class_id","requested_shift_id","contracted_hours"];
+      const enrollmentData = Object.fromEntries(
+        allowed.filter(k => e[k] !== undefined).map(k => [k, e[k]]));
+      // student_id aponta pro aluno criado/existente
+      enrollmentData.student_id = studentId;
+      const fields = Object.keys(enrollmentData);
+      const placeholders = fields.map(() => "?").join(", ");
+      if (fields.length > 0) {
+        await connection.query(
+          `INSERT INTO enrollments (${fields.join(", ")}) VALUES (${placeholders})`,
+          fields.map(f => enrollmentData[f]));
+      }
+    }
+
+    await connection.commit();
+
+    // Retorna tudo criado/atualizado para o frontend
+    const [updatedStudent] = await query("SELECT * FROM students WHERE id = ?", [studentId]);
+    sendJson(response, 201, {
+      student: updatedStudent,
+      fatherId,
+      motherId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    const message = error instanceof Error ? error.message : "Erro interno.";
+    sendJson(response, 500, { error: `Falha ao salvar matrícula completa: ${message}` });
+  } finally {
+    connection.release();
+  }
+}
+
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
@@ -301,6 +432,12 @@ const server = createServer(async (request, response) => {
       const view = reports[reportMatch[1]];
       if (!view) return sendJson(response, 404, { error: "Relatório não encontrado." });
       return sendJson(response, 200, await query(`SELECT * FROM ${view}`));
+    }
+
+    // Novo endpoint: matrícula completa com criação automática de aluno/pais
+    const enrollmentCompleteMatch = path === "/api/enrollments/complete" && method === "POST";
+    if (enrollmentCompleteMatch) {
+      return await handleEnrollmentComplete(request, response);
     }
 
     const entityMatch = path.match(/^\/api\/([a-z_]+)(?:\/(\d+))?$/);
