@@ -36,10 +36,12 @@ ALTER TABLE `enrollments`
 
 DROP VIEW IF EXISTS vw_enrollments;
 CREATE VIEW vw_enrollments AS
-SELECT e.id, e.year, e.student_id, e.previous_grade_course_shift, e.gender, e.lives_with,
+SELECT e.id, e.year, e.student_id, e.previous_grade_course_shift, e.lives_with,
        e.guardian_name, e.guardian_relationship, e.siblings_in_daycare, e.siblings_details,
        e.new_student, e.origin_school, e.requested_class_id, e.requested_shift_id,
-       e.contracted_hours, c.name AS class_name, s.name AS shift_name
+       e.contracted_hours, st.name AS student_name, st.birth_date, st.nationality, st.birthplace, st.gender,
+       c.name AS class_name, s.name AS shift_name
   FROM enrollments e
+  LEFT JOIN students st ON st.id = e.student_id
   LEFT JOIN classes c ON c.id = e.requested_class_id
   LEFT JOIN shifts s ON s.id = e.requested_shift_id;

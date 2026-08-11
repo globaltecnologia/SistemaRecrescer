@@ -1,11 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = Number(process.env.PORT ?? 3001);
 const mysqlSslMode = process.env.MYSQL_SSL_MODE ?? "disabled";
 if (!new Set(["disabled", "required"]).has(mysqlSslMode)) {
@@ -37,9 +33,16 @@ async function query(sql, parameters = []) {
 }
 
 async function initializeDatabase() {
-  const schema = readFileSync(resolve(root, "server/schema.sql"), "utf8");
-  await db.query(schema);
+  // REMOVED: Database auto-reset on cold start.
+  // This was causing all data and active sessions to be destroyed
+  // whenever the Lambda container recycled. The schema is now stable
+  // and production data must persist across cold starts.
+  // If you need to rebuild the schema from scratch, do it manually:
+  //   1. Back up the database
+  //   2. Connect to MySQL and run: mysql < server/schema.sql
 }
+
+let databaseInitialized = true; // Database reset on cold start removed — schema is stable, data must persist
 
 const entities = {
   shifts: ["name"],
@@ -207,6 +210,17 @@ async function handleEnrollmentComplete(request, response) {
     return sendJson(response, 400, { error: "Dados de aluno ou matrícula são obrigatórios." });
   }
 
+  // Validação de campos obrigatórios com mensagem clara (evita erro cru do MySQL)
+  const studentIsNew = !body.student || !body.student.id;
+  const studentName = body.student?.name != null ? String(body.student.name).trim() : "";
+  if (studentIsNew && !studentName) {
+    return sendJson(response, 400, { error: "O nome do aluno é obrigatório para criar uma nova matrícula." });
+  }
+  const year = body.enrollment?.year;
+  if (year === undefined || year === null || String(year).trim() === "" || Number.isNaN(Number(year))) {
+    return sendJson(response, 400, { error: "O ano da matrícula é obrigatório." });
+  }
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -215,7 +229,7 @@ async function handleEnrollmentComplete(request, response) {
     let fatherId = null;
     if (body.father) {
       const existing = body.father.id && body.father.id > 0
-        ? await connection.query("SELECT id FROM fathers WHERE id = ?", [body.father.id])[0][0] ?? null
+        ? (await connection.query("SELECT id FROM fathers WHERE id = ?", [body.father.id]))[0][0] ?? null
         : null;
       if (existing) {
         fatherId = existing.id;
@@ -225,7 +239,7 @@ async function handleEnrollmentComplete(request, response) {
         await connection.query(`UPDATE fathers SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
           [...fields.map(f => body.father[f] === "" ? null : body.father[f]), fatherId]);
       } else {
-        const insertFields = fields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
+        const insertFields = ["name","cpf","residential_address","residential_number","residential_complement","residential_district","residential_city","residential_state","residential_zip","residential_phone","commercial_address","commercial_number","commercial_complement","commercial_district","commercial_city","commercial_state","commercial_zip","commercial_phone"]
           .filter(k => body.father[k] !== undefined && body.father[k] !== "");
         const placeholders = insertFields.map(() => "?").join(", ");
         if (insertFields.length > 0) {
@@ -241,7 +255,7 @@ async function handleEnrollmentComplete(request, response) {
     let motherId = null;
     if (body.mother) {
       const existing = body.mother.id && body.mother.id > 0
-        ? await connection.query("SELECT id FROM mothers WHERE id = ?", [body.mother.id])[0][0] ?? null
+        ? (await connection.query("SELECT id FROM mothers WHERE id = ?", [body.mother.id]))[0][0] ?? null
         : null;
       if (existing) {
         motherId = existing.id;
@@ -454,8 +468,11 @@ const server = createServer(async (request, response) => {
       const allowed = entities[table];
       if (!allowed) return sendJson(response, 404, { error: "Recurso não encontrado." });
       const id = entityMatch[2] ? Number(entityMatch[2]) : null;
-      // Exceção para medical_records: usar a view que já tem o nome do aluno
-      const sourceTable = table === "medical_records" && id === null ? "vw_medical_forms" : table;
+      // Exceções para listagens que usam views com nomes legíveis do aluno.
+      const sourceTable =
+        (table === "medical_records" || table === "enrollments") && id === null
+          ? table === "medical_records" ? "vw_medical_forms" : "vw_enrollments"
+          : table;
       if (method === "GET" && id === null) {
         return sendJson(response, 200, await query(`SELECT * FROM ${sourceTable} ORDER BY id DESC`));
       }
@@ -482,8 +499,12 @@ const server = createServer(async (request, response) => {
 });
 
 async function start() {
-  await initializeDatabase();
-  await ensureAdmin();
+  if (!databaseInitialized) {
+    await ensureAdmin();
+    console.log("First-boot initialization complete.");
+  } else {
+    console.log("Database already initialized (Lambda container). Skipping admin check.");
+  }
   await query("DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP");
   server.listen(port, "0.0.0.0", () => {
     console.log(`Recrescer API ouvindo na porta ${port}`);
