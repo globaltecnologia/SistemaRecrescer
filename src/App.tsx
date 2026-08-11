@@ -151,7 +151,7 @@ function FatherSection({ fathers, value, onChange }: {
   };
 
   const handleChange = (field: string, val: any) => {
-    onChange({ [field]: val });
+    onChange({ ...value, [field]: val });
   };
 
   return (
@@ -244,7 +244,7 @@ function MotherSection({ mothers, value, onChange }: {
   };
 
   const handleChange = (field: string, val: any) => {
-    onChange({ [field]: val });
+    onChange({ ...value, [field]: val });
   };
 
   return (
@@ -373,7 +373,15 @@ function StudentAutocomplete({ students, fathers, mothers, value, onChange }: {
         <input
           type="text"
           value={searchText}
-          onChange={e => { setSearchText(e.target.value); if (hasSelection) handleSelect(null); }}
+          onChange={e => {
+            const t = e.target.value;
+            setSearchText(t);
+            if (hasSelection) handleSelect(null);
+            // Sincronizar o nome digitado para o estado do aluno (novo ou existente)
+            if (t !== String(value.name ?? "")) {
+              onChange({ ...(value as any), name: t });
+            }
+          }}
           placeholder="Buscar aluno ou digitar nome para novo..."
           style={{ flex: 1, padding: "8px 12px", border: "2px solid #4a90d9", borderRadius: 4, fontSize: 15 }}
         />
@@ -411,7 +419,14 @@ function EnrollmentsPage({ references }: { references: References }) {
 
   // Atualiza estado de aluno + pai/mãe de uma vez (chamado pelo StudentAutocomplete)
   const handleStudentChange = useCallback((updates: Partial<UiRecord>, studentUpdates?: Partial<UiRecord>, fatherUpdates?: Partial<UiRecord>, motherUpdates?: Partial<UiRecord>) => {
-    if (studentUpdates) setStudentData(studentUpdates);
+    if (studentUpdates) {
+      setStudentData(studentUpdates);
+    } else if (updates && Object.keys(updates).length) {
+      // Sem studentUpdates dedicado — aplicar updates ao studentData (ex.: nome digitado).
+      // Remover sub-objetos father/mother para não espalhar dentro de studentData.
+      const { father, mother, ...studentOnly } = updates as any;
+      setStudentData(prev => ({ ...prev, ...studentOnly }));
+    }
     if (fatherUpdates !== undefined) setFatherData(fatherUpdates);
     if (motherUpdates !== undefined) setMotherData(motherUpdates);
     // Atualizar também formValues pra campos que podem ser editados manualmente depois
@@ -448,8 +463,16 @@ function EnrollmentsPage({ references }: { references: References }) {
     }
 
     try {
+      const studentPayload = { ...studentData, ...studentFromForm };
+
+      // Gerar registration automático se é aluno novo e não tem
+      if (!studentPayload.id && !studentPayload.registration && studentPayload.name) {
+        const now = new Date();
+        studentPayload.registration = `REC-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(Math.floor(Math.random()*9999)).padStart(4,"0")}`;
+      }
+
       const payload: EnrollmentPayload = {
-        student: { ...studentData, ...studentFromForm },
+        student: studentPayload,
         enrollment: enrollmentFromForm,
       };
 

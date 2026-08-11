@@ -274,13 +274,21 @@ async function handleEnrollmentComplete(request, response) {
       await connection.query(`UPDATE students SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         [...fields.map(f => s[f] === "" ? null : s[f]), studentId]);
     } else {
+      // Gerar registration automático se não foi informado
+      const registration = s.registration && s.registration !== "" 
+        ? s.registration 
+        : `REC-${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}${String(new Date().getDate()).padStart(2,"0")}-${String(Math.floor(Math.random()*9999)).padStart(4,"0")}`;
+      
       const insertFields = ["registration","name","birth_date","gender","nationality","birthplace","grade","education_level","class_id","shift_id","health_plan","blood_type","rh_factor","address","phone","fp","ff","scholarship","first_installment","pm","siblings_at_school","father_id","mother_id","notes","active"]
-        .filter(k => s[k] !== undefined && s[k] !== "" && s[k] !== null);
+        .filter(k => {
+          if (k === "registration") return true;
+          return s[k] !== undefined && s[k] !== "" && s[k] !== null;
+        });
       const placeholders = insertFields.map(() => "?").join(", ");
       if (insertFields.length > 1) {
         const result = await connection.query(
           `INSERT INTO students (${insertFields.join(", ")}) VALUES (${placeholders})`,
-          insertFields.map(f => s[f]));
+          insertFields.map(f => f === "registration" ? registration : (s[f] === "" ? null : s[f])));
         studentId = result.insertId;
       }
     }
