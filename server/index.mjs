@@ -229,7 +229,7 @@ async function handleEnrollmentComplete(request, response) {
           .filter(k => body.father[k] !== undefined && body.father[k] !== "");
         const placeholders = insertFields.map(() => "?").join(", ");
         if (insertFields.length > 0) {
-          const result = await connection.query(
+          const [result] = await connection.query(
             `INSERT INTO fathers (${insertFields.join(", ")}) VALUES (${placeholders})`,
             insertFields.map(f => body.father[f] === "" ? null : body.father[f]));
           fatherId = result.insertId;
@@ -255,7 +255,7 @@ async function handleEnrollmentComplete(request, response) {
           .filter(k => body.mother[k] !== undefined && body.mother[k] !== "");
         const placeholders = insertFields.map(() => "?").join(", ");
         if (insertFields.length > 0) {
-          const result = await connection.query(
+          const [result] = await connection.query(
             `INSERT INTO mothers (${insertFields.join(", ")}) VALUES (${placeholders})`,
             insertFields.map(f => body.mother[f] === "" ? null : body.mother[f]));
           motherId = result.insertId;
@@ -286,7 +286,7 @@ async function handleEnrollmentComplete(request, response) {
         });
       const placeholders = insertFields.map(() => "?").join(", ");
       if (insertFields.length > 1) {
-        const result = await connection.query(
+        const [result] = await connection.query(
           `INSERT INTO students (${insertFields.join(", ")}) VALUES (${placeholders})`,
           insertFields.map(f => f === "registration" ? registration : (s[f] === "" ? null : s[f])));
         studentId = result.insertId;
