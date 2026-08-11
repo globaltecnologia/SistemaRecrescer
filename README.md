@@ -31,6 +31,7 @@ No primeiro start a API cria o usuário definido em `ADMIN_LOGIN`/`ADMIN_PASSWOR
 - autenticação exclusivamente por login e senha;
 - usuários administrativos com senha derivada via `scrypt`;
 - CRUD de ficha de matrícula, alunos, pais, mães e ficha médica;
+- Autocomplete inteligente: ao selecionar um aluno existente, a ficha preenche automaticamente todos os campos derivativos; novos alunos podem ser criados direto pelo formulário;
 - CRUD de turmas e turnos;
 - CRUD de usuários administrativos;
 - relatórios de ficha de matrícula, ficha médica, lista de presença e alunos por turma;
@@ -44,6 +45,15 @@ No primeiro start a API cria o usuário definido em `ADMIN_LOGIN`/`ADMIN_PASSWOR
 - `vw_students_by_class`
 
 As operações de transporte ficam na aplicação (`src/api.ts`). A Biblioteca Global permanece desacoplada do backend e recebe operações por callbacks/data sources.
+
+## Migrações de banco
+
+Migrations ficam em `deploy/migrations/` e são executadas antes do deploy:
+
+```bash
+source deploy/config.env
+./deploy/run-migrations.sh "$MYSQL_HOST" "$MYSQL_PORT" "$MYSQL_DATABASE" "$MYSQL_USER" "$MYSQL_PASSWORD" "${MYSQL_SSL_CA_BASE64:-}"
+```
 
 ## Testes funcionais
 

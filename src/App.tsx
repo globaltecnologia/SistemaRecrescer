@@ -418,19 +418,39 @@ function EnrollmentsPage({ references }: { references: References }) {
     if (updates.name && studentData.name !== updates.name) setFormValues(prev => ({ ...prev, name: updates.name }));
   }, [studentData.name]);
 
+  const handleStudentFieldChange = useCallback((field: string, value: any) => {
+    setStudentData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   const handleEnrollmentFieldChange = useCallback((field: string, value: any) => {
     setFormValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Campos que vão para students vs enrollments table
+  const studentFields = new Set(["gender", "nationality", "birthplace", "birth_date"]);
+  const isStudentField = (f: string) => studentFields.has(f);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    
+    setLoading(true);
+
+    // Separar campos do aluno vs matrícula dos formValues
+    const studentFromForm: Record<string, any> = {};
+    const enrollmentFromForm: Record<string, any> = {};
+    for (const [key, val] of Object.entries(formValues)) {
+      if (val === undefined || val === "") continue;
+      if (isStudentField(key) || key === "name" || key === "address" || key === "phone" || key === "registration") {
+        studentFromForm[key] = val;
+      } else {
+        enrollmentFromForm[key] = val;
+      }
+    }
 
     try {
       const payload: EnrollmentPayload = {
-        student: studentData,
-        enrollment: formValues,
+        student: { ...studentData, ...studentFromForm },
+        enrollment: enrollmentFromForm,
       };
 
       // Incluir pai se houver dados significativos (nome ou id)
@@ -509,7 +529,7 @@ function EnrollmentsPage({ references }: { references: References }) {
           {/* Sexo */}
           <label>
             <span style={{ fontWeight: 500 }}>Sexo</span>
-            <select value={formValues.gender ?? ""} onChange={e => handleEnrollmentFieldChange("gender", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
+            <select value={formValues.gender ?? ""} onChange={e => handleStudentFieldChange("gender", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }}>
               <option value="">Selecione...</option>
               <option value="M">Masculino</option>
               <option value="F">Feminino</option>
@@ -604,19 +624,19 @@ function EnrollmentsPage({ references }: { references: References }) {
           {/* Nacionalidade */}
           <label>
             <span style={{ fontWeight: 500 }}>Nacionalidade</span>
-            <input type="text" value={String(formValues.nationality ?? "")} onChange={e => handleEnrollmentFieldChange("nationality", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+            <input type="text" value={String(formValues.nationality ?? "")} onChange={e => handleStudentFieldChange("nationality", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
           </label>
 
           {/* Naturalidade */}
           <label>
             <span style={{ fontWeight: 500 }}>Naturalidade</span>
-            <input type="text" value={String(formValues.birthplace ?? "")} onChange={e => handleEnrollmentFieldChange("birthplace", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+            <input type="text" value={String(formValues.birthplace ?? "")} onChange={e => handleStudentFieldChange("birthplace", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
           </label>
 
           {/* Data de nascimento */}
           <label>
             <span style={{ fontWeight: 500 }}>Data de nascimento</span>
-            <input type="date" value={String(formValues.birth_date ?? "")} onChange={e => handleEnrollmentFieldChange("birth_date", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+            <input type="date" value={String(formValues.birth_date ?? "")} onChange={e => handleStudentFieldChange("birth_date", e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
           </label>
         </div>
 

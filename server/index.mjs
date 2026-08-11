@@ -71,7 +71,7 @@ const entities = {
     "mother_id", 
     "notes", 
     "active"],
-  enrollments: ["year", "student_id", "student_name", "birth_date", "nationality", "birthplace", "previous_grade_course_shift", "gender", "father_name", "father_phone", "father_cpf", "mother_name", "mother_phone", "mother_cpf", "lives_with", "student_address", "student_phone", "guardian_name", "guardian_relationship", "siblings_in_daycare", "siblings_details", "new_student", "origin_school", "requested_class_id", "requested_shift_id", "contracted_hours"],
+  enrollments: ["year", "student_id", "previous_grade_course_shift", "lives_with", "guardian_name", "guardian_relationship", "siblings_in_daycare", "siblings_details", "new_student", "origin_school", "requested_class_id", "requested_shift_id", "contracted_hours"],
   medical_records: [
     "student_id", 
     "emergency_contact_name", 
@@ -300,7 +300,7 @@ async function handleEnrollmentComplete(request, response) {
     // --- 5. Matrícula ---
     const e = body.enrollment;
     if (e) {
-      const allowed = ["year","student_id","birth_date","nationality","birthplace","previous_grade_course_shift","gender","father_name","father_phone","father_cpf","mother_name","mother_phone","mother_cpf","lives_with","student_address","student_phone","guardian_name","guardian_relationship","siblings_in_daycare","siblings_details","new_student","origin_school","requested_class_id","requested_shift_id","contracted_hours"];
+      const allowed = ["year", "student_id", "previous_grade_course_shift", "lives_with", "guardian_name", "guardian_relationship", "siblings_in_daycare", "siblings_details", "new_student", "origin_school", "requested_class_id", "requested_shift_id", "contracted_hours"];
       const enrollmentData = Object.fromEntries(
         allowed.filter(k => e[k] !== undefined).map(k => [k, e[k]]));
       // student_id aponta pro aluno criado/existente
