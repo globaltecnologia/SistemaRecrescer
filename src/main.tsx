@@ -5,7 +5,7 @@ import App from "./App";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BibliotecaThemeProvider>
+    <BibliotecaThemeProvider initialTheme="escuro">
       <App />
     </BibliotecaThemeProvider>
   </StrictMode>

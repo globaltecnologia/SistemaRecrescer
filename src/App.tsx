@@ -163,7 +163,13 @@ function FatherSection({ fathers, value, onChange }: {
         <input
           type="text"
           value={searchText}
-          onChange={e => { setSearchText(e.target.value); if (hasSelection && e.target.value !== String(value.name ?? "")) handleSelect(null); }}
+          onChange={e => {
+            const t = e.target.value;
+            setSearchText(t);
+            if (hasSelection && t !== String(value.name ?? "")) handleSelect(null);
+            // Sincronizar o nome digitado para o estado do pai (novo ou existente)
+            onChange({ ...value, name: t });
+          }}
           placeholder="Buscar ou digitar novo..."
           style={{ flex: 1, padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4 }}
         />
@@ -255,7 +261,13 @@ function MotherSection({ mothers, value, onChange }: {
         <input
           type="text"
           value={searchText}
-          onChange={e => { setSearchText(e.target.value); if (hasSelection && e.target.value !== String(value.name ?? "")) handleSelect(null); }}
+          onChange={e => {
+            const t = e.target.value;
+            setSearchText(t);
+            if (hasSelection && t !== String(value.name ?? "")) handleSelect(null);
+            // Sincronizar o nome digitado para o estado da mãe (novo ou existente)
+            onChange({ ...value, name: t });
+          }}
           placeholder="Buscar ou digitar novo..."
           style={{ flex: 1, padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4 }}
         />
@@ -415,6 +427,8 @@ function EnrollmentsPage({ references }: { references: References }) {
   const [motherData, setMotherData] = useState<Partial<UiRecord>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showForm, setShowForm] = useState(false);
   
 
   // Atualiza estado de aluno + pai/mãe de uma vez (chamado pelo StudentAutocomplete)
@@ -441,6 +455,22 @@ function EnrollmentsPage({ references }: { references: References }) {
     setFormValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Abre o formulário para um novo registro, já com tudo limpo
+  const handleNewRegistration = () => {
+    setStudentData({ active: true });
+    setFatherData({});
+    setMotherData({});
+    setFormValues({});
+    setError("");
+    setShowForm(true);
+  };
+
+  // Fecha o formulário sem salvar
+  const handleCancel = () => {
+    setError("");
+    setShowForm(false);
+  };
+
   // Campos que vão para students vs enrollments table
   const studentFields = new Set(["gender", "nationality", "birthplace", "birth_date"]);
   const isStudentField = (f: string) => studentFields.has(f);
@@ -465,8 +495,27 @@ function EnrollmentsPage({ references }: { references: References }) {
     try {
       const studentPayload = { ...studentData, ...studentFromForm };
 
+      // Validação de campos obrigatórios antes de enviar (mensagem amigável)
+      const validationErrors: string[] = [];
+
+      const studentNameVal = String(studentPayload.name ?? "").trim();
+      if (!studentPayload.id && !studentNameVal) {
+        validationErrors.push("Informe o nome do aluno para criar uma nova matrícula.");
+      }
+
+      const yearVal = enrollmentFromForm.year;
+      if (yearVal === undefined || yearVal === null || String(yearVal).trim() === "" || Number.isNaN(Number(yearVal))) {
+        validationErrors.push("Informe o ano da matrícula.");
+      }
+
+      if (validationErrors.length > 0) {
+        setLoading(false);
+        setError(validationErrors.join(" ")); // exibe todos os campos faltantes de uma vez
+        return;
+      }
+
       // Gerar registration automático se é aluno novo e não tem
-      if (!studentPayload.id && !studentPayload.registration && studentPayload.name) {
+      if (!studentPayload.id && !studentPayload.registration && studentNameVal) {
         const now = new Date();
         studentPayload.registration = `REC-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(Math.floor(Math.random()*9999)).padStart(4,"0")}`;
       }
@@ -492,6 +541,10 @@ function EnrollmentsPage({ references }: { references: References }) {
       setFatherData({});
       setMotherData({});
       setFormValues({});
+      setError("");
+      // Recarregar a lista de matrículas existentes
+      setRefreshKey(k => k + 1);
+      setShowForm(false);
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : "Falha ao salvar matrícula.");
     } finally {
@@ -512,6 +565,7 @@ function EnrollmentsPage({ references }: { references: References }) {
 
       {loading && <div className="error-notice" role="alert">Salvando...</div>}
 
+      {showForm && (
       <form onSubmit={handleSubmit}>
         {/* Campo aluno com Autocomplete */}
         <StudentAutocomplete
@@ -546,7 +600,7 @@ function EnrollmentsPage({ references }: { references: References }) {
           {/* Ano */}
           <label>
             <span style={{ fontWeight: 500 }}>Ano *</span>
-            <input type="number" required value={String(formValues.year ?? "")} onChange={e => handleEnrollmentFieldChange("year", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
+            <input type="number" value={String(formValues.year ?? "")} onChange={e => handleEnrollmentFieldChange("year", e.target.value ? Number(e.target.value) : "")} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, boxSizing: "border-box" }} />
           </label>
 
           {/* Sexo */}
@@ -663,16 +717,29 @@ function EnrollmentsPage({ references }: { references: References }) {
           </label>
         </div>
 
-        {/* Botão salvar */}
+        {/* Botões salvar / cancelar */}
         <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
           <button type="submit" className="primary-button" disabled={loading}>
             {loading ? "Salvando..." : "Salvar Matrícula"}
           </button>
+          <button type="button" className="secondary-button" onClick={handleCancel} disabled={loading}>
+            Cancelar
+          </button>
         </div>
       </form>
+      )}
+
+      {/* Barra de ações: abrir novo registro */}
+      {!showForm && (
+        <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
+          <button type="button" className="primary-button" onClick={handleNewRegistration}>
+            + Novo Registro
+          </button>
+        </div>
+      )}
 
       {/* Lista de matrículas existentes */}
-      <EnrollmentGrid />
+      <EnrollmentGrid key={refreshKey} />
     </section>
   );
 }
@@ -697,9 +764,21 @@ function EnrollmentGrid() {
     <section style={{ marginTop: 32 }}>
       <h3 style={{ fontSize: 16, marginBottom: 12 }}>📋 Matrículas existentes</h3>
       <JsonGrid
-        data={rows} loading={loading}
-        hiddenColumns={["id", "created_at", "updated_at"]}
-        columnLabels={{ year: "Ano", student_name: "Aluno" }}
+        data={blankNull(rows)} loading={loading}
+        hiddenColumns={[
+          "id", "created_at", "updated_at",
+          "student_id", "previous_grade_course_shift", "lives_with",
+          "guardian_name", "guardian_relationship",
+          "siblings_in_daycare", "siblings_details", "new_student",
+          "origin_school", "requested_class_id", "requested_shift_id",
+          "contracted_hours"
+        ]}
+        columnLabels={{
+          year: "Ano",
+          student_name: "Aluno",
+          class_name: "Turma",
+          shift_name: "Turno"
+        }}
       />
     </section>
   );
@@ -785,15 +864,27 @@ function EntityPage({ page, references }: { page: PageKey; references: Reference
     };
   }
 
+  // Tipagem de colunas para a grid: campos vazios (null) renderizam em branco
+  // em vez do chip "Nulo". Derivada dos campos definidos no catálogo.
+  const fieldDefs = definition.fields(references);
+  const gridColumns: Record<string, { type: "text" | "date" | "boolean" }> = {};
+  for (const f of fieldDefs) {
+    const t = (f as { type?: string }).type;
+    gridColumns[f.name] = { type: t === "date" ? "date" : t === "boolean" ? "boolean" : "text" };
+  }
+  // Colunas exibidas que não estão nos campos do formulário também devem renderizar vazio em branco
+  gridColumns["student_name"] = gridColumns["student_name"] ?? { type: "text" };
+
   return (
     <Cadastro
       title={definition.title}
       description={definition.description}
-      fields={definition.fields(references)}
+      fields={fieldDefs}
       dataSource={dataSource}
       columns={2}
       hiddenColumns={hiddenColumns}
       columnLabels={columnLabels}
+      gridColumns={gridColumns}
       newLabel="Novo registro"
     />
   );
@@ -806,8 +897,17 @@ function reportValue(value: UiRecord[string]) {
 }
 
 function reportGridValue(value: UiRecord[string]) {
-  if (value === null || value === undefined) return "Nulo";
+  if (value === null || value === undefined) return "";
   return reportValue(value);
+}
+
+// Substitui null/undefined por string vazio para a grid exibir campos vazios em branco
+function blankNull(rows: UiRecord[]): UiRecord[] {
+  return rows.map((r) => {
+    const out: UiRecord = {};
+    for (const [k, v] of Object.entries(r)) out[k] = v === null || v === undefined ? "" : v;
+    return out;
+  });
 }
 
 function reportDate(value: UiRecord[string]) {
@@ -979,7 +1079,7 @@ function ReportPage({ page }: { page: PageKey }) {
       </div>
       <ErrorNotice message={error} />
       <div className={page === "report-enrollment" ? "clickable-report-grid no-print" : ""} onClick={openEnrollmentFromGrid}>
-        <JsonGrid data={rows} loading={loading} searchable sortable pagination initialPageSize={25} hiddenColumns={hiddenColumns} columnLabels={columnLabels} />
+        <JsonGrid data={blankNull(rows)} loading={loading} searchable sortable pagination initialPageSize={25} hiddenColumns={hiddenColumns} columnLabels={columnLabels} />
       </div>
       {selectedEnrollment && <EnrollmentPrintModal enrollment={selectedEnrollment} onClose={() => setSelectedEnrollment(null)} />}
     </section>
@@ -1030,7 +1130,7 @@ function UsersPage() {
       </div>
       <ErrorNotice message={error} />
       <JsonGrid
-        data={rows} loading={loading} hiddenColumns={["id", "created_at", "updated_at"]}
+        data={blankNull(rows)} loading={loading} hiddenColumns={["id", "created_at", "updated_at"]}
         columnLabels={{ name: "Nome", login: "Login", active: "Ativo" }}
         onEdit={(row) => { setEditing(row); setOpen(true); }} onDelete={remove}
         searchable sortable pagination
@@ -1041,7 +1141,8 @@ function UsersPage() {
             <h3>{editing ? "Editar usuário" : "Novo usuário"}</h3>
             <label>Nome<input name="name" required defaultValue={String(editing?.name ?? "")} /></label>
             <label>Login<input name="login" required autoComplete="username" defaultValue={String(editing?.login ?? "")} /></label>
-            <label>Senha<input name="password" type="password" autoComplete="new-password" required={!editing} placeholder={editing ? "Deixe em branco para manter" : ""} /></label>
+            <label>Senha<input name="password" type="password" autoComplete="new-password" required={!editing} placeholder={editing ? "Deixe em branco para manter" : ""} 
+            /></label>
             <label className="check-field"><input name="active" type="checkbox" defaultChecked={editing ? Boolean(editing.active) : true} /> Usuário ativo</label>
             <div className="dialog-actions">
               <button type="button" onClick={() => setOpen(false)}>Cancelar</button>

@@ -23,13 +23,17 @@ test("Relatórios: as quatro views carregam dados reais", async ({ page, request
   const shiftName = unique("Turno relatório"), className = unique("Turma relatório"), studentName = unique("Aluno relatório");
   const shift = await apiCreate(request, "shifts", { name: shiftName });
   const cls = await apiCreate(request, "classes", { name: className, school_year: 2026, shift_id: shift.id, grade: "1º", education_level: "Creche" });
-  const student = await apiCreate(request, "students", { registration: unique("REL"), name: studentName, class_id: cls.id, shift_id: shift.id, active: true });
-  await apiCreate(request, "enrollments", { year: 2026, student_id: student.id, student_name: studentName, father_name: "Pai do relatório", requested_class_id: cls.id, requested_shift_id: shift.id, contracted_hours: "09:00h" });
+  const father = await apiCreate(request, "fathers", { name: "Pai do relatório" });
+  const student = await apiCreate(request, "students", { registration: unique("REL"), name: studentName, class_id: cls.id, shift_id: shift.id, father_id: father.id, active: true });
+  await apiCreate(request, "enrollments", { year: 2026, student_id: student.id, requested_class_id: cls.id, requested_shift_id: shift.id, contracted_hours: "09:00h" });
   await apiCreate(request, "medical_records", { student_id: student.id, emergency_contact_name: "Contato relatório" });
   await loginUi(page);
   const reportNav = page.locator(".nav-section").filter({ hasText: "Relatórios" });
   for (const report of ["Ficha de Matrícula", "Ficha Médica", "Lista de Presença", "Alunos por Turma"]) {
     await reportNav.getByRole("button", { name: report, exact: true }).click();
+    // A grid é paginada (25 por página) e o banco de teste acumula dados entre execuções;
+    // o filtro pesquisa no dataset completo, garantindo que o registro recém-criado apareça.
+    await page.getByPlaceholder("Filtrar registros...").fill(studentName);
     await expect(page.getByText(studentName).first()).toBeVisible();
     if (report === "Ficha de Matrícula") {
       await page.getByRole("row").filter({ hasText: studentName }).click();

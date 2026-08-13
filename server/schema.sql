@@ -168,8 +168,9 @@ CREATE VIEW vw_enrollments AS
 SELECT e.id, e.year, e.student_id, e.previous_grade_course_shift, e.lives_with,
        e.guardian_name, e.guardian_relationship, e.siblings_in_daycare, e.siblings_details,
        e.new_student, e.origin_school, e.requested_class_id, e.requested_shift_id,
-       e.contracted_hours, c.name AS class_name, s.name AS shift_name
+       e.contracted_hours, st.name AS student_name, c.name AS class_name, s.name AS shift_name
   FROM enrollments e
+  LEFT JOIN students st ON st.id = e.student_id
   LEFT JOIN classes c ON c.id = e.requested_class_id
   LEFT JOIN shifts s ON s.id = e.requested_shift_id;
 
@@ -203,7 +204,7 @@ SELECT e.id, e.year, st.name AS student_name,
 DROP VIEW IF EXISTS vw_medical_forms;
 
 CREATE VIEW vw_medical_forms AS
-SELECT m.id, st.registration, st.name AS student_name,
+SELECT m.id, m.student_id, st.registration, st.name AS student_name,
        m.emergency_contact_name, m.emergency_contact_relationship,
        m.emergency_contact_phone, m.secondary_contact_name,
        m.secondary_contact_relationship, m.secondary_contact_phone,

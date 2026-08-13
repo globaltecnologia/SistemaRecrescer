@@ -3,3 +3,7 @@ dist
 test-results
 playwright-report
 .git
+server/*.bak
+server/*.old
+server/check-prod-schema.mjs
+server/check-view.mjs

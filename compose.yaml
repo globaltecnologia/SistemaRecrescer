@@ -8,7 +8,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-altere-esta-senha}
     volumes:
       - recrescer_mysql:/var/lib/mysql
-      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
     ports:
       - "3307:3306"
     healthcheck:
